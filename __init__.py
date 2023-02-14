@@ -34,15 +34,19 @@ def dimensionlist(self,seleobj):
     return xlist,ylist
 
 
-def loc(self,seleobj,xlist=[],ylist=[],aligining=2, numreturntotal=0):
+def loc(self,seleobj,xlist=[],ylist=[],aligining=2, numreturntotal=0,ynumreturntotal=0): 
+    # ※numretuntotalの値はグループの改行ごとに加算されていく
     
     selelen = len(seleobj)
+    # 何回Y軸に改行するか
     kirisute = (selelen//aligining)+1
-    
+    ylocdeme =ynumreturntotal+self.myfloatvector2[1]
     xlocdeme =self.myfloatvector2[0]
-    numreturn=0
+    #　Y軸のカウント変数
+    ynumreturn=0
 
     for count,i in enumerate(seleobj):
+
  
         if self.mybool == True:
             i.location[2] =0+self.myfloatvector[2]
@@ -53,29 +57,30 @@ def loc(self,seleobj,xlist=[],ylist=[],aligining=2, numreturntotal=0):
             i.location[0] =numreturntotal+self.myfloatvector2[0]
             
             pass
-
+        
 
 
         else:
 
              # グループの初回以降のXの位置
-            print('###',count,aligining,selelen)
+
             xlocdeme = xlocdeme+max(xlist)
             if count !=0:
                 i.location[0] = xlocdeme+numreturntotal
             elif count+1 ==selelen:
-                print('###1',count,aligining,selelen)
+                # print('###1',count,aligining,selelen)
 
                 pass
-                
         # グループ内での改行(Y軸)の条件式
+
         for j in range(kirisute):
             #指定した並び以上になったらY軸へ改行する分岐
             if count >=aligining*j:
     
-                #　Ytransformは次のグループの移動量
-                i.location[1] = (max(ylist))*j+self.myfloatvector2[1]
-                numreturn+=1
+                i.location[1] = (max(ylist))*j+ylocdeme
+                ynumreturn+=1
+
+ 
 
             
 
@@ -91,7 +96,7 @@ def loc(self,seleobj,xlist=[],ylist=[],aligining=2, numreturntotal=0):
                     xlocdeme = self.myfloatvector2[0]-max(xlist)
 
         
-    return numreturn
+    return ynumreturn
               
 
 def gropuping(objlist):
@@ -102,9 +107,7 @@ def gropuping(objlist):
 
 def gropu_align(self):
     objlist=[]
-
     seleobj=bpy.context.selected_objects
-
     xlist,ylist = dimensionlist(self,seleobj)
 
     for i in seleobj:
@@ -112,7 +115,9 @@ def gropu_align(self):
 
     sortlist =[]
 
+    # 下記2つはグループの改行移動量
     numreturntotal=0
+    ynumreturntotal=0
     
     for object, spltname in gropuping(objlist):
         
@@ -121,28 +126,56 @@ def gropu_align(self):
         #次のグループの横への改行移動量
         xlist,ylist=dimensionlist(self,seleobj)
 
-        #　ここから各グループごとにオブジェクトを整列していく。
+        #　ここから各グループごとのオブジェクトを整列していく。
         numreturn = loc(self,
                             seleobj=sortlist, 
                             xlist=xlist,
                             ylist=ylist,
                             aligining=self.myint,
                             numreturntotal=numreturntotal,
+                            ynumreturntotal=ynumreturntotal,
                     
                             )
-        # ここがおすすめグループの改行移動関数
+        
+        # ここがグループの改行移動関数 ※　これ、今思えばオブジェクト数と横列数を割って商がでなければって条件式つくればいいだけだったのでは…
+        if self.yaxisgroupret != True:
+            if self.myint >= numreturn: 
+                # 一つのグループないのオブジェクト数が指定の指定の数を超えたら※つまり改行は存在しない
+                #一行のトータルの値しかｘ軸に移動しない
+                numreturntotal=numreturn*(max(xlist))+numreturntotal
+                
+            else:
+                # 改行があるということは指定の数の並びであるという事だからｘ軸の長さは「指定の数×寸法」という計算式である
+                numreturntotal=self.myint*(max(xlist))+numreturntotal
+        
+        elif self.yaxisgroupret == True:
+            yreturn=(len(sortlist)//self.myint)+1
+            if len(sortlist) % self.myint == 0:
+                print ("偶数です")
+                yreturn-=1
+            else:
+                print ("奇数です")
+            # if yreturn ==1:
+            #     yreturn-=1
 
-        if self.myint >= numreturn: 
-            # 一つのグループないのオブジェクト数が指定の指定の数を超えたら※つまり改行は存在しない
-            #一行のトータルの値しかｘ軸に移動しない
-            numreturntotal=numreturn*(max(xlist))+numreturntotal
-            
-        else:
-            # 改行があるということは指定の数の並びであるという事だからｘ軸の長さは「指定の数×寸法」という計算式である
-            numreturntotal=self.myint*(max(xlist))+numreturntotal
+            ynumreturntotal=(yreturn*max(ylist))+ynumreturntotal
+            print('###1',)
+            print('###',self.myint,len(sortlist),yreturn,max(ylist),ynumreturntotal)
+            print('###2',)
 
+       
 
         sortlist.clear()
+
+
+def look_obname(self):
+    if self.look_obname==True:
+        for ob in bpy.context.selectable_objects:
+            ob.show_name = True
+
+    else:
+        for ob in bpy.context.selectable_objects:
+            ob.show_name = False
 
 
 def Align_sigle_gropu(self):
@@ -193,6 +226,7 @@ def main_draw(self):
     layout.prop(self, "myint" )
     layout.prop(self, "myfloatvector")
     layout.prop(self, "mybool" )
+    layout.prop(self, "yaxisgroupret" )
 
     box =layout.box()
     box.prop(self, "mybool2" )
@@ -202,9 +236,14 @@ def main_draw(self):
     movebox =layout.box()
     movebox.label(text="Whole Movement") 
     movebox.prop(self, "myfloatvector2")
+    layout.prop(self, "look_obname" )
+
+
 
     
 def main(self, context):
+    look_obname(self)
+
     if self.mybool2 != True:
         gropu_align(self)
     else:
@@ -215,7 +254,7 @@ class AH_OP_Aligning_Horizontally(Operator):
     bl_idname = 'object.aligning_horizontally'
     bl_label = 'Aligning Horizontally'
     bl_description = f' CLASS_NAME_IS={sys._getframe().f_code.co_name}/n ID_NAME_IS={bl_idname}\n FILENAME_IS={__file__}\n ' 
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'UNDO','PRESET'}
     
    
     myfloatvector:bpy.props.FloatVectorProperty(
@@ -256,6 +295,15 @@ class AH_OP_Aligning_Horizontally(Operator):
         )
     mybool3 : bpy.props.BoolProperty(
         name= "Random",# 
+        default=0
+        )
+    yaxisgroupret : bpy.props.BoolProperty(
+        name= "y axis group Return",# 
+        default=0
+        )
+    
+    look_obname : bpy.props.BoolProperty(
+        name= "Look Object name",# 
         default=0
         )
                  
