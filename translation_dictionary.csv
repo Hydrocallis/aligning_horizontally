@@ -1,0 +1,18 @@
+逆,selected_mulch_bool
+簡単ブーリアン,Simple Boolean
+メッシュ操作関係,Mesh Oparator
+選択面分離,Mesh Separate
+メッシュの無いオブジェクトを削除,Mesh Empty Delete
+簡単回転,Simple Rotate
+各オブジェクトの名前を見る,Look Object name
+間隔,Dimensition
+グループ数,Total number of groups
+行数,alignment parameter
+各オブジェクトのZ位置を原点へ,z to the origin
+Y軸方向へグループを移動,y axis group Return
+全体の値の調整,Whole Movement
+90度回転,Rotate 90 degrees
+反対方向へ回転,Minus the value of rotation
+全オブジェクトを整列,Bringing Groups Together
+各オブジェクトを長方形に整列,Aligning Horizontally
+※Z軸は機能しません,Note: z-axis is not available.

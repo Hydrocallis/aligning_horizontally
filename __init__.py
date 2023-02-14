@@ -3,7 +3,7 @@ bl_info = {
     "name": "Aligning Horizontally",
     "description": " ",
     "author": "Hydrocallis",
-    "version": (1, 0, 0),
+    "version": (1, 0, 1),
     "blender": (3, 2, 0),
     "location": "View3D > Sidebar > AH Tab",
     "warning": "",
@@ -22,16 +22,56 @@ from bpy.types import (
 from itertools import groupby
 import random
 
+# 他のモジュールを読み込み
+from .utils.transformrotation import transform
+
+# リロードモジュール　開始
+def reload_unity_modules(name):
+    import os
+    import importlib
+   
+    utils_modules = sorted([name[:-3] for name in os.listdir(os.path.join(__path__[0], "utils")) if name.endswith('.py')])
+
+    for module in utils_modules:
+        impline = "from . utils import %s" % (module)
+
+        # print("###hydoro unity reloading one %s" % (".".join([name] + ['utils'] + [module])))
+
+        exec(impline)
+        importlib.reload(eval(module))
+
+    modules = []
+
+    for path, module in modules:
+        if path:
+            impline = "from . %s import %s" % (".".join(path), module)
+        else:
+            impline = "from . import %s" % (module)
+
+        print("###hydoro unity reloading second %s" % (".".join([name] + path + [module])))
+
+        exec(impline)
+        importlib.reload(eval(module))
+
+if 'bpy' in locals():
+    reload_unity_modules(bl_info['name'])
+# リロードモジュール　終了
+
+
 
 def dimensionlist(self,seleobj):
     xlist =[]
     ylist =[]
+    zlist =[]
+
 
     for i in seleobj:
         xlist.append(i.dimensions[0]+self.myfloatvector[0])
         ylist.append(i.dimensions[1]+self.myfloatvector[1])
+        zlist.append(i.dimensions[2]+self.myfloatvector[2])
 
-    return xlist,ylist
+
+    return xlist,ylist,zlist
 
 
 def loc(self,seleobj,xlist=[],ylist=[],aligining=2, numreturntotal=0,ynumreturntotal=0): 
@@ -57,11 +97,8 @@ def loc(self,seleobj,xlist=[],ylist=[],aligining=2, numreturntotal=0,ynumreturnt
             i.location[0] =numreturntotal+self.myfloatvector2[0]
             
             pass
-        
-
-
+       
         else:
-
              # グループの初回以降のXの位置
 
             xlocdeme = xlocdeme+max(xlist)
@@ -79,9 +116,6 @@ def loc(self,seleobj,xlist=[],ylist=[],aligining=2, numreturntotal=0,ynumreturnt
     
                 i.location[1] = (max(ylist))*j+ylocdeme
                 ynumreturn+=1
-
- 
-
             
 
         # 改行後のXの位置の演算
@@ -104,11 +138,11 @@ def gropuping(objlist):
     outputlist = groupby(objlist, key=lambda x: x['spltname'])
     return outputlist
 
-
+#　グループの位置の処理関係
 def gropu_align(self):
     objlist=[]
     seleobj=bpy.context.selected_objects
-    xlist,ylist = dimensionlist(self,seleobj)
+    xlist,ylist,zlist = dimensionlist(self,seleobj)
 
     for i in seleobj:
         objlist.append({"object":i,"spltname":i.name.split('.', 1)[0]})
@@ -124,7 +158,7 @@ def gropu_align(self):
         for name in spltname:
             sortlist.append(name['object'])
         #次のグループの横への改行移動量
-        xlist,ylist=dimensionlist(self,seleobj)
+        xlist,ylist,zlist=dimensionlist(self,seleobj)
 
         #　ここから各グループごとのオブジェクトを整列していく。
         numreturn = loc(self,
@@ -150,20 +184,21 @@ def gropu_align(self):
         
         elif self.yaxisgroupret == True:
             yreturn=(len(sortlist)//self.myint)+1
+            # 割り切れる行はあまりの列が無いので一つ改行を減らしておく
             if len(sortlist) % self.myint == 0:
-                print ("偶数です")
+                # print ("偶数です")
                 yreturn-=1
             else:
-                print ("奇数です")
+                # print ("奇数です")
+                pass
             # if yreturn ==1:
             #     yreturn-=1
 
-            ynumreturntotal=(yreturn*max(ylist))+ynumreturntotal
-            print('###1',)
-            print('###',self.myint,len(sortlist),yreturn,max(ylist),ynumreturntotal)
-            print('###2',)
-
-       
+            # ynumreturntotal=(yreturn*max(ylist))+ynumreturntotal
+            # print('###1',)
+            # print('###',self.myint,len(sortlist),yreturn,max(ylist),ynumreturntotal)
+            # print('###2',)
+      
 
         sortlist.clear()
 
@@ -190,7 +225,7 @@ def Align_sigle_gropu(self):
         random.seed(self.myint2)
         random.shuffle(seleobj)
 
-    xlist,ylist = dimensionlist(self,seleobj)
+    xlist,ylist,zlist = dimensionlist(self,seleobj)
 
 
     loc(self,
@@ -205,7 +240,7 @@ def Align_sigle_gropu(self):
 def main_draw(self):
     layout = self.layout
     seleobj = bpy.context.selected_objects
-    xlist,ylist = dimensionlist(self,seleobj)
+    xlist,ylist,zlist = dimensionlist(self,seleobj)
 
     #　グループ数の合計を計算　開始
     objlist =[]
@@ -217,13 +252,16 @@ def main_draw(self):
           a+=1
     #　グループ数の合計を計算　終了
 
-
+    layout.prop(self, "look_obname" )
     layout.label(text="Dimensition") 
-    layout.label(text="x="+str(max(xlist)) )
-    layout.label(text="y="+str(max(ylist)) )
-    layout.label(text="Total number of groups="+str(a) )
+    layout.label(text="x="+str(max(xlist)))
+    layout.label(text="y="+str(max(ylist)))
+    layout.label(text="Total number of groups")
+    layout.label(text=str(a) )
 
     layout.prop(self, "myint" )
+    layout.label(text="Note: z-axis is not available.")
+
     layout.prop(self, "myfloatvector")
     layout.prop(self, "mybool" )
     layout.prop(self, "yaxisgroupret" )
@@ -236,19 +274,25 @@ def main_draw(self):
     movebox =layout.box()
     movebox.label(text="Whole Movement") 
     movebox.prop(self, "myfloatvector2")
-    layout.prop(self, "look_obname" )
 
-
+    transrotatebox =layout.box()
+    transrotatebox.prop(self, "tranmormbool" )
+    transrotatebox.prop(self, "my_enum" )
+    transrotatebox.prop(self, "minustranmormbool" )
 
     
 def main(self, context):
+    self.myfloatvector[2]=self.myfloatvector2[2]
     look_obname(self)
 
     if self.mybool2 != True:
         gropu_align(self)
     else:
         Align_sigle_gropu(self)
-    
+
+    if self.tranmormbool == True:
+        transform(taransaxis=self.my_enum,minustranmormbool=self.minustranmormbool)
+
 
 class AH_OP_Aligning_Horizontally(Operator):
     bl_idname = 'object.aligning_horizontally'
@@ -258,7 +302,7 @@ class AH_OP_Aligning_Horizontally(Operator):
     
    
     myfloatvector:bpy.props.FloatVectorProperty(
-        name='Relative Offset', 
+        name='Constant Offset', 
         description='', 
         default=(0.0, 0.0, 0),
         subtype="XYZ_LENGTH"
@@ -266,7 +310,7 @@ class AH_OP_Aligning_Horizontally(Operator):
         
    
     myfloatvector2:bpy.props.FloatVectorProperty(
-        name='Relative Offset', 
+        name='Constant Offset', 
         description='', 
         default=(0.0, 0.0, 0),
         subtype="XYZ_LENGTH"
@@ -306,7 +350,29 @@ class AH_OP_Aligning_Horizontally(Operator):
         name= "Look Object name",# 
         default=0
         )
-                 
+    
+    tranmormbool : bpy.props.BoolProperty(
+        name= "Rotate 90 degrees",# 
+        default=0
+        )
+    
+    minustranmormbool : bpy.props.BoolProperty(
+        name= "Minus the value of rotation",# 
+        default=0
+        )
+    
+    my_enum: bpy.props.EnumProperty(items= [
+                               ('X', "X", "", 1),
+                               ("Y", "Y", "", 2),
+                               ("Z", "Z", "", 3),
+                                   
+                           ],
+                           name="Axis",
+                           default='X',
+                           )
+
+
+                
     def execute(self, context):
         main(self, context)
 
@@ -341,15 +407,40 @@ class AH_PT_Aligning_HorizontallyPanel(Panel):
         layout.operator("object.aligning_horizontally")
 
 
+# 辞書登録関数　開始
+import os,codecs,csv
+def GetTranslationDict():
+    dict = {}
+    # 直下に置かれているcsvファイルのパスを代入
+    path = os.path.join(os.path.dirname(__file__), "translation_dictionary.csv")
+    with codecs.open(path, 'r', 'utf-8') as f:
+        reader = csv.reader(f)
+        dict['ja_JP'] = {}
+        for row in reader:
+            for context in bpy.app.translations.contexts:
+                dict['ja_JP'][(context, row[1].replace('\\n', '\n'))] = row[0].replace('\\n', '\n')
+    return dict
+# 辞書登録関数　終わり
+
+
 def register():
     bpy.utils.register_class(AH_OP_Aligning_Horizontally)
     bpy.utils.register_class(AH_PT_Aligning_HorizontallyPanel)
 
+ 	# 翻訳辞書の登録
+    try:
+        translation_dict = GetTranslationDict()
+        bpy.app.translations.register(__name__, translation_dict)
+    except: pass
 
 def unregister():
     bpy.utils.unregister_class(AH_OP_Aligning_Horizontally)
     bpy.utils.unregister_class(AH_PT_Aligning_HorizontallyPanel)
 
+	# 翻訳辞書の登録解除
+    try:
+        bpy.app.translations.unregister(__name__)
+    except: pass
 
 if __name__ == "__main__":
     register()
