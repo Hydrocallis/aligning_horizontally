@@ -58,7 +58,6 @@ if 'bpy' in locals():
 # リロードモジュール　終了
 
 
-
 def dimensionlist(self,seleobj):
     xlist =[]
     ylist =[]
@@ -294,8 +293,9 @@ def main_draw(self):
 
     transrotatebox =layout.box()
     transrotatebox.prop(self, "tranmormbool" )
-    transrotatebox.prop(self, "my_enum" )
     transrotatebox.prop(self, "minustranmormbool" )
+    grid = layout.grid_flow(row_major=True, columns=3, even_columns=True, even_rows=True, align=True)
+    grid.prop(self, "my_enum",  expand=True )
 
     
 def main(self, context):
