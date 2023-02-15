@@ -91,6 +91,7 @@ def loc(self, seleobj, xlist=[], ylist=[], zlist=[], aligining=2, numreturntotal
     selelen = len(seleobj)
     # 何回Y軸に改行するか
     kirisute = (selelen//aligining)+1
+    
     returnlocdeme =ynumreturntotal+self.myfloatvector2[subreturn]
     xlocdeme =self.myfloatvector2[0]
     #　Y軸のカウント変数
@@ -163,8 +164,17 @@ def gropu_align(self):
         
         for name in spltname:
             sortlist.append(name['object'])
+
+         # グループピングしたソートリストをグループ毎にランダムに配置する
+        if self.mybool3 == True:
+            random.seed(self.myint2)
+            random.shuffle(sortlist)
+
         #次のグループの横への改行移動量
         xlist,ylist,zlist=dimensionlist(self,seleobj)
+
+        
+
 
         #　ここから各グループごとのオブジェクトを整列していく。
         numreturn = loc(self,
@@ -198,25 +208,18 @@ def gropu_align(self):
             else:
                 # print ("奇数です")
                 pass
-            # if yreturn ==1:
-            #     yreturn-=1
 
-            ynumreturntotal=(yreturn*max(ylist))+ynumreturntotal
+            #　グループ改行の幅の判定
+            if self.Z_axis_for_line_breaks== True:
+                
+                ynumreturntotal=(yreturn*max(zlist))+ynumreturntotal
+            else:
 
+                ynumreturntotal=(yreturn*max(ylist))+ynumreturntotal
 
         sortlist.clear()
 
-
-def look_obname(self):
-    if self.look_obname==True:
-        for ob in bpy.context.selectable_objects:
-            ob.show_name = True
-
-    else:
-        for ob in bpy.context.selectable_objects:
-            ob.show_name = False
-
-
+# グルーピングしないで整列
 def Align_sigle_gropu(self):
     numreturntotal=0
     seleobj=bpy.context.selected_objects
@@ -225,7 +228,6 @@ def Align_sigle_gropu(self):
 
     # ランダムに配置する
     if self.mybool3 == True:
-
         random.seed(self.myint2)
         random.shuffle(seleobj)
 
@@ -240,6 +242,16 @@ def Align_sigle_gropu(self):
         aligining=self.myint,
         numreturntotal=numreturntotal,
             )   
+
+
+def look_obname(self):
+    if self.look_obname==True:
+        for ob in bpy.context.selectable_objects:
+            ob.show_name = True
+
+    else:
+        for ob in bpy.context.selectable_objects:
+            ob.show_name = False
 
 
 def main_draw(self):
@@ -265,17 +277,16 @@ def main_draw(self):
     layout.label(text=str(a) )
 
     layout.prop(self, "myint" )
-    layout.label(text="Note: z-axis is not available.")
+    # layout.label(text="Note: z-axis is not available.")
 
     layout.prop(self, "myfloatvector")
     layout.prop(self, "mybool" )
     layout.prop(self, "yaxisgroupret" )
     layout.prop(self, "Z_axis_for_line_breaks" )
 
-    box =layout.box()
-    box.prop(self, "mybool2" )
-    box.prop(self, "mybool3" )
-    box.prop(self, "myint2" )
+    layout.prop(self, "mybool2" )
+    layout.prop(self, "mybool3" )
+    layout.prop(self, "myint2" )
 
     movebox =layout.box()
     movebox.label(text="Whole Movement") 
@@ -288,7 +299,7 @@ def main_draw(self):
 
     
 def main(self, context):
-    self.myfloatvector[2]=self.myfloatvector2[2]
+
     look_obname(self)
 
     if self.mybool2 != True:
@@ -336,7 +347,7 @@ class AH_OP_Aligning_Horizontally(Operator):
        )
 
     mybool : bpy.props.BoolProperty(
-        name= "z to the origin",
+        name= "To the origin",
         default=0
         )
     mybool2 : bpy.props.BoolProperty(
