@@ -74,12 +74,19 @@ def dimensionlist(self,seleobj):
     return xlist,ylist,zlist
 
 
-def loc(self,seleobj,xlist=[],ylist=[],aligining=2, numreturntotal=0,ynumreturntotal=0): 
+def loc(self, seleobj, xlist=[], ylist=[], zlist=[], aligining=2, numreturntotal=0, ynumreturntotal=0): 
     # ※numretuntotalの値はグループの改行ごとに加算されていく
-    yokox=0
-    subreturn=1
+    yaxis=1
+    subreturn=yaxis
     subreturnmax=max(ylist)
-    okuyukiz=2
+    depth = 2
+    depthmax=max(zlist)
+
+    if self.Z_axis_for_line_breaks== True:
+        subreturn=depth
+        subreturnmax=depthmax
+        depth=yaxis
+
     
     selelen = len(seleobj)
     # 何回Y軸に改行するか
@@ -89,31 +96,31 @@ def loc(self,seleobj,xlist=[],ylist=[],aligining=2, numreturntotal=0,ynumreturnt
     #　Y軸のカウント変数
     ynumreturn=0
 
+
     for count,i in enumerate(seleobj):
 
  
+        # 奥行きの位置
         if self.mybool == True:
-            i.location[2] =0+self.myfloatvector[2]
+            i.location[depth] =self.myfloatvector[depth]
         else:
-            i.location[2] =i.location[2]+self.myfloatvector[2]
+            i.location[depth] =i.location[depth]+self.myfloatvector[depth]
+
+
         # グループの初回のXの位置　以降は位置がプラスされていく
         if count == 0:
             i.location[0] =numreturntotal+self.myfloatvector2[0]
-            
             pass
-       
         else:
              # グループの初回以降のXの位置
-
             xlocdeme = xlocdeme+max(xlist)
             if count !=0:
                 i.location[0] = xlocdeme+numreturntotal
             elif count+1 ==selelen:
-                # print('###1',count,aligining,selelen)
-
                 pass
-        # グループ内での改行(Y軸)の条件式
 
+
+        # グループ内での改行(Y軸)の条件式
         for j in range(kirisute):
             #指定した並び以上になったらY軸へ改行する分岐
             if count >=aligining*j:
@@ -124,13 +131,8 @@ def loc(self,seleobj,xlist=[],ylist=[],aligining=2, numreturntotal=0,ynumreturnt
 
         # 改行後のXの位置の演算
         if len(seleobj) != 1:
-                
-        
             for j in range(kirisute): 
-    
                 if count+1 == aligining*j:
-                    
-                    
                     xlocdeme = self.myfloatvector2[0]-max(xlist)
 
         
@@ -169,6 +171,7 @@ def gropu_align(self):
                             seleobj=sortlist, 
                             xlist=xlist,
                             ylist=ylist,
+                            zlist=zlist,
                             aligining=self.myint,
                             numreturntotal=numreturntotal,
                             ynumreturntotal=ynumreturntotal,
@@ -233,6 +236,7 @@ def Align_sigle_gropu(self):
         seleobj=seleobj, 
         xlist=xlist,
         ylist=ylist,
+        zlist=zlist,
         aligining=self.myint,
         numreturntotal=numreturntotal,
             )   
@@ -266,6 +270,7 @@ def main_draw(self):
     layout.prop(self, "myfloatvector")
     layout.prop(self, "mybool" )
     layout.prop(self, "yaxisgroupret" )
+    layout.prop(self, "Z_axis_for_line_breaks" )
 
     box =layout.box()
     box.prop(self, "mybool2" )
@@ -344,6 +349,10 @@ class AH_OP_Aligning_Horizontally(Operator):
         )
     yaxisgroupret : bpy.props.BoolProperty(
         name= "y axis group Return",# 
+        default=0
+        )
+    Z_axis_for_line_breaks : bpy.props.BoolProperty(
+        name= "Z-axis for line breaks",# 
         default=0
         )
     
