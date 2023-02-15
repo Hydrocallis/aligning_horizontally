@@ -76,11 +76,15 @@ def dimensionlist(self,seleobj):
 
 def loc(self,seleobj,xlist=[],ylist=[],aligining=2, numreturntotal=0,ynumreturntotal=0): 
     # ※numretuntotalの値はグループの改行ごとに加算されていく
+    yokox=0
+    subreturn=1
+    subreturnmax=max(ylist)
+    okuyukiz=2
     
     selelen = len(seleobj)
     # 何回Y軸に改行するか
     kirisute = (selelen//aligining)+1
-    ylocdeme =ynumreturntotal+self.myfloatvector2[1]
+    returnlocdeme =ynumreturntotal+self.myfloatvector2[subreturn]
     xlocdeme =self.myfloatvector2[0]
     #　Y軸のカウント変数
     ynumreturn=0
@@ -114,7 +118,7 @@ def loc(self,seleobj,xlist=[],ylist=[],aligining=2, numreturntotal=0,ynumreturnt
             #指定した並び以上になったらY軸へ改行する分岐
             if count >=aligining*j:
     
-                i.location[1] = (max(ylist))*j+ylocdeme
+                i.location[subreturn] = (subreturnmax)*j+returnlocdeme
                 ynumreturn+=1
             
 
@@ -194,11 +198,8 @@ def gropu_align(self):
             # if yreturn ==1:
             #     yreturn-=1
 
-            # ynumreturntotal=(yreturn*max(ylist))+ynumreturntotal
-            # print('###1',)
-            # print('###',self.myint,len(sortlist),yreturn,max(ylist),ynumreturntotal)
-            # print('###2',)
-      
+            ynumreturntotal=(yreturn*max(ylist))+ynumreturntotal
+
 
         sortlist.clear()
 
