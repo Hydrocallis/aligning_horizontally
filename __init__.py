@@ -3,7 +3,7 @@ bl_info = {
     "name": "Aligning Horizontally",
     "description": " ",
     "author": "Hydrocallis",
-    "version": (1, 0, 1),
+    "version": (1, 0, 2),
     "blender": (3, 2, 0),
     "location": "View3D > Sidebar > AH Tab",
     "warning": "",
