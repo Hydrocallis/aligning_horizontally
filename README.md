@@ -6,7 +6,7 @@
 
 配列の寸法の基準は選択したオブジェクト中の一番大きいサイズに合わせた形になります。
 
-![画像の説明](image\AH_intoro.png "introduction")
+![画像の説明](image/AH_intoro.png "introduction")
 
 ***●具体的にどんな時に使えますかね？***
 
@@ -47,7 +47,7 @@
 
 基本的にメッシュを適応してお使い下さい。
 
-![画像の説明](https://file+.vscode-resource.vscode-cdn.net/d%3A/%E3%83%9E%E3%82%A4%E3%83%89%E3%83%A9%E3%82%A4%E3%83%96/blender%20scrpt/addons/aligning_horizontally\image\AH-modifier.png)
+![画像の説明](image/AH-modifier.png)
 
 ***●概要***
 
