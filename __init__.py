@@ -3,7 +3,7 @@ bl_info = {
     "name": "Aligning Horizontally",
     "description": " ",
     "author": "Hydrocallis",
-    "version": (1, 0, 2),
+    "version": (1, 0, 3),
     "blender": (3, 2, 0),
     "location": "View3D > Sidebar > AH Tab",
     "warning": "",
@@ -24,7 +24,7 @@ import random
 
 # 他のモジュールを読み込み
 from .utils.transformrotation import transform
-
+from .utils.location import loc
 # リロードモジュール　開始
 def reload_unity_modules(name):
     import os
@@ -73,72 +73,6 @@ def dimensionlist(self,seleobj):
     return xlist,ylist,zlist
 
 
-def loc(self, seleobj, xlist=[], ylist=[], zlist=[], aligining=2, numreturntotal=0, ynumreturntotal=0): 
-    # ※numretuntotalの値はグループの改行ごとに加算されていく
-    yaxis=1
-    subreturn=yaxis
-    subreturnmax=max(ylist)
-    depth = 2
-    depthmax=max(zlist)
-
-    if self.Z_axis_for_line_breaks== True:
-        subreturn=depth
-        subreturnmax=depthmax
-        depth=yaxis
-
-    
-    selelen = len(seleobj)
-    # 何回Y軸に改行するか
-    kirisute = (selelen//aligining)+1
-    
-    returnlocdeme =ynumreturntotal+self.myfloatvector2[subreturn]
-    xlocdeme =self.myfloatvector2[0]
-    #　Y軸のカウント変数
-    ynumreturn=0
-
-
-    for count,i in enumerate(seleobj):
-
- 
-        # 奥行きの位置
-        if self.mybool == True:
-            i.location[depth] =self.myfloatvector[depth]
-        else:
-            i.location[depth] =i.location[depth]+self.myfloatvector[depth]
-
-
-        # グループの初回のXの位置　以降は位置がプラスされていく
-        if count == 0:
-            i.location[0] =numreturntotal+self.myfloatvector2[0]
-            pass
-        else:
-             # グループの初回以降のXの位置
-            xlocdeme = xlocdeme+max(xlist)
-            if count !=0:
-                i.location[0] = xlocdeme+numreturntotal
-            elif count+1 ==selelen:
-                pass
-
-
-        # グループ内での改行(Y軸)の条件式
-        for j in range(kirisute):
-            #指定した並び以上になったらY軸へ改行する分岐
-            if count >=aligining*j:
-    
-                i.location[subreturn] = (subreturnmax)*j+returnlocdeme
-                ynumreturn+=1
-            
-
-        # 改行後のXの位置の演算
-        if len(seleobj) != 1:
-            for j in range(kirisute): 
-                if count+1 == aligining*j:
-                    xlocdeme = self.myfloatvector2[0]-max(xlist)
-
-        
-    return ynumreturn
-              
-
 def gropuping(objlist):
     objlist.sort(key=lambda x: x['spltname'])
     outputlist = groupby(objlist, key=lambda x: x['spltname'])
@@ -173,7 +107,6 @@ def gropu_align(self):
         xlist,ylist,zlist=dimensionlist(self,seleobj)
 
         
-
 
         #　ここから各グループごとのオブジェクトを整列していく。
         numreturn = loc(self,
@@ -419,7 +352,7 @@ class AH_PT_Aligning_HorizontallyPanel(Panel):
     bl_idname = "AH_PT_PANEL"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "AH"
+    bl_category = "KSYN"
 
 
     def draw(self, context):
