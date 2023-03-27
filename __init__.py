@@ -57,6 +57,13 @@ if 'bpy' in locals():
     reload_unity_modules(bl_info['name'])
 # リロードモジュール　終了
 
+def get_translang(eng,trans):
+    prev = bpy.context.preferences.view
+    if prev.language =='ja_JP' and prev.use_translate_interface == True:
+        return trans
+    else:
+        return eng
+
 
 def dimensionlist(self,seleobj):
     xlist =[]
@@ -173,6 +180,7 @@ def Align_sigle_gropu(self):
         zlist=zlist,
         aligining=self.myint,
         numreturntotal=numreturntotal,
+        
             )   
 
 
@@ -203,8 +211,10 @@ def main_draw(self):
 
     layout.prop(self, "look_obname" )
     layout.label(text="Dimensition") 
-    layout.label(text="x="+str(max(xlist)))
-    layout.label(text="y="+str(max(ylist)))
+    if  xlist != []:
+        layout.label(text="x="+str(max(xlist)))
+    if  ylist != []:
+        layout.label(text="y="+str(max(ylist)))
     layout.label(text="Total number of groups")
     layout.label(text=str(a) )
 
@@ -212,8 +222,13 @@ def main_draw(self):
     # layout.label(text="Note: z-axis is not available.")
 
     layout.prop(self, "myfloatvector")
-    layout.prop(self, "mybool" )
-    layout.prop(self, "yaxisgroupret" )
+    layout.prop(self, "starting_from_an_active_object" )
+    layout.prop(self, "to_origin" )
+    ybox = layout.box()
+    ybox.prop(self, "yaxisgroupret" )
+    ybox.prop(self, "y_axis_direction_to_reverse" )
+    ybox.prop(self, "x_axis_direction_to_reverse" )
+
     layout.prop(self, "Z_axis_for_line_breaks" )
 
     layout.prop(self, "mybool2" )
@@ -232,6 +247,10 @@ def main_draw(self):
 
     
 def main(self, context):
+    if self.starting_from_an_active_object == True:
+        self.filerst_obj_loc = bpy.context.object.location.xyz
+    else:
+        self.filerst_obj_loc = (0,0,0)
 
     look_obname(self)
 
@@ -279,8 +298,8 @@ class AH_OP_Aligning_Horizontally(Operator):
 
        )
 
-    mybool : bpy.props.BoolProperty(
-        name= "To the origin",
+    to_origin : bpy.props.BoolProperty(
+        name= get_translang("align vertically","縦軸を揃える"),
         default=0
         )
     mybool2 : bpy.props.BoolProperty(
@@ -313,6 +332,19 @@ class AH_OP_Aligning_Horizontally(Operator):
     minustranmormbool : bpy.props.BoolProperty(
         name= "Minus the value of rotation",# 
         default=0
+        )
+    starting_from_an_active_object : bpy.props.BoolProperty(
+        name= get_translang('Starting from an active object','アクティブなオブジェクトを起点にする'),# 
+        default=True
+        )
+    y_axis_direction_to_reverse : bpy.props.BoolProperty(
+        name= get_translang('Y-axis direction to reverse','Y軸方向を反対へ'),# 
+        default=False
+        )
+    
+    x_axis_direction_to_reverse : bpy.props.BoolProperty(
+        name= get_translang('X-axis direction to the opposite direction','X軸方向を反対へ'),# 
+        default=False
         )
     
     my_enum: bpy.props.EnumProperty(items= [

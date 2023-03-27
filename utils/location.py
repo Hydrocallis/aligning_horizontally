@@ -1,4 +1,7 @@
+from mathutils import Vector
+
 def setting(self, seleobj, xlist=[], ylist=[], zlist=[], aligining=2, numreturntotal=0, ynumreturntotal=0):
+
     # ※numretuntotalの値はグループの改行ごとに加算されていく
     yaxis=1
     self.subreturn=yaxis
@@ -18,52 +21,82 @@ def setting(self, seleobj, xlist=[], ylist=[], zlist=[], aligining=2, numreturnt
     
     self.returnlocdeme =ynumreturntotal+self.myfloatvector2[self.subreturn]
     self.xlocdeme =self.myfloatvector2[0]
-    #　Y軸のカウント変数
+
+def move_y_or_z_return(self, count, aligining, i ,ynumreturn):
+    # グループ内での改行(Y軸OR Z軸)の条件式
+    for j in range(self.kirisute):
+        #指定した並び以上になったらY軸へ改行する分岐
+        if count >=aligining*j:
+            if self.y_axis_direction_to_reverse == False:
+                i.location[self.subreturn] = (self.subreturnmax)*j + self.returnlocdeme
+            else:
+                i.location[self.subreturn] = -(self.subreturnmax)*j - self.returnlocdeme
+
+            ynumreturn += 1
+
+    return ynumreturn
+
+def move_x_move(self,count,i,numreturntotal,xlist):
+    # グループの初回のXの位置　以降は位置がプラスされていく
+    if count == 0:
+        if self.x_axis_direction_to_reverse == False:
+            i.location[0] = numreturntotal + self.myfloatvector2[0]
+        else:
+            i.location[0] = -numreturntotal - self.myfloatvector2[0]
+
+        pass
     
+    else:
+            # グループの初回以降のXの位置
+        self.xlocdeme = self.xlocdeme+max(xlist)
+        if count !=0:
+            if self.x_axis_direction_to_reverse == False:
+                i.location[0] = self.xlocdeme + numreturntotal
+            else:
+                i.location[0] = -self.xlocdeme - numreturntotal
+
+        elif count+1 == self.selelen:
+            pass
+
+def move(self,i,count,numreturntotal,xlist,aligining,seleobj,ynumreturn):
+
+    
+    # 奥行きの位置
+    if self.to_origin == True:
+        i.location[self.depth] =self.myfloatvector[self.depth]+ self.filerst_obj_loc[self.depth]
+    else:
+        i.location[self.depth] =i.location[self.depth]+self.myfloatvector[self.depth]
+
+
+    move_x_move(self,count,i,numreturntotal,xlist)
+
+    ynumreturn = move_y_or_z_return(self, count, aligining, i ,ynumreturn)
+                    
+
+    # 改行後のXの位置の演算
+    if len(seleobj) != 1:
+        for j in range(self.kirisute): 
+            if count+1 == aligining*j:
+                self.xlocdeme = self.myfloatvector2[0]-max(xlist)
+
+    return ynumreturn
 
 def loc(self, seleobj, xlist=[], ylist=[], zlist=[], aligining=2, numreturntotal=0, ynumreturntotal=0): 
     
     setting(self, seleobj, xlist ,ylist, zlist, aligining, numreturntotal, ynumreturntotal)
-    ynumreturn=0
 
+    #　Y軸のカウント変数
+    ynumreturn = 0
+    # filerst_obj_loc =seleobj[0].location 
     for count,i in enumerate(seleobj):
-
- 
-        # 奥行きの位置
-        if self.mybool == True:
-            i.location[self.depth] =self.myfloatvector[self.depth]
-        else:
-            i.location[self.depth] =i.location[self.depth]+self.myfloatvector[self.depth]
-
-
-        # グループの初回のXの位置　以降は位置がプラスされていく
-        if count == 0:
-            i.location[0] =numreturntotal+self.myfloatvector2[0]
-            pass
-        else:
-             # グループの初回以降のXの位置
-            self.xlocdeme = self.xlocdeme+max(xlist)
-            if count !=0:
-                i.location[0] = self.xlocdeme+numreturntotal
-            elif count+1 == self.selelen:
-                pass
-
-
-        # グループ内での改行(Y軸)の条件式
-        for j in range(self.kirisute):
-            #指定した並び以上になったらY軸へ改行する分岐
-            if count >=aligining*j:
-    
-                i.location[self.subreturn] = (self.subreturnmax)*j + self.returnlocdeme
-                ynumreturn += 1
-            
-
-        # 改行後のXの位置の演算
-        if len(seleobj) != 1:
-            for j in range(self.kirisute): 
-                if count+1 == aligining*j:
-                    self.xlocdeme = self.myfloatvector2[0]-max(xlist)
-
+        ynumreturn = move(self,i,count,numreturntotal,xlist,aligining,seleobj,ynumreturn)
+        # if count ==0:
+        # print('###self.filerst_obj_loc',self.filerst_obj_loc)
+        # print('###depth',self.depth)
+        if self.depth ==2:
+            i.location= i.location+Vector((self.filerst_obj_loc[0],self.filerst_obj_loc[1],0))
+        elif self.depth ==1:
+            i.location= i.location+Vector((self.filerst_obj_loc[0],0,self.filerst_obj_loc[2]))
         
     return ynumreturn
               
