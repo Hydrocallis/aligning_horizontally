@@ -19,12 +19,16 @@ from bpy.types import (
         PropertyGroup,
         )
 
-from itertools import groupby
 import random
 
 # 他のモジュールを読み込み
 from .utils.transformrotation import transform
 from .utils.location import loc
+from .utils.dimension import dimensionlist
+from .utils.draw import main_draw
+from .utils.gropuping import gropuping
+from .utils.get_translang import get_translang
+
 # リロードモジュール　開始
 def reload_unity_modules(name):
     import os
@@ -56,34 +60,6 @@ def reload_unity_modules(name):
 if 'bpy' in locals():
     reload_unity_modules(bl_info['name'])
 # リロードモジュール　終了
-
-def get_translang(eng,trans):
-    prev = bpy.context.preferences.view
-    if prev.language =='ja_JP' and prev.use_translate_interface == True:
-        return trans
-    else:
-        return eng
-
-
-def dimensionlist(self,seleobj):
-    xlist =[]
-    ylist =[]
-    zlist =[]
-
-
-    for i in seleobj:
-        xlist.append(i.dimensions[0]+self.myfloatvector[0])
-        ylist.append(i.dimensions[1]+self.myfloatvector[1])
-        zlist.append(i.dimensions[2]+self.myfloatvector[2])
-
-
-    return xlist,ylist,zlist
-
-
-def gropuping(objlist):
-    objlist.sort(key=lambda x: x['spltname'])
-    outputlist = groupby(objlist, key=lambda x: x['spltname'])
-    return outputlist
 
 #　グループの位置の処理関係
 def gropu_align(self):
@@ -183,7 +159,6 @@ def Align_sigle_gropu(self):
         
             )   
 
-
 def look_obname(self):
     if self.look_obname==True:
         for ob in bpy.context.selectable_objects:
@@ -192,59 +167,6 @@ def look_obname(self):
     else:
         for ob in bpy.context.selectable_objects:
             ob.show_name = False
-
-
-def main_draw(self):
-    layout = self.layout
-    seleobj = bpy.context.selected_objects
-    xlist,ylist,zlist = dimensionlist(self,seleobj)
-
-    #　グループ数の合計を計算　開始
-    objlist =[]
-    a=0
-    for i in seleobj:
-        objlist.append({"object":i,"spltname":i.name.split('.', 1)[0]})
-
-    for object, spltname in gropuping(objlist):
-          a+=1
-    #　グループ数の合計を計算　終了
-
-    layout.prop(self, "look_obname" )
-    layout.label(text="Dimensition") 
-    if  xlist != []:
-        layout.label(text="x="+str(max(xlist)))
-    if  ylist != []:
-        layout.label(text="y="+str(max(ylist)))
-    layout.label(text="Total number of groups")
-    layout.label(text=str(a) )
-
-    layout.prop(self, "myint" )
-    # layout.label(text="Note: z-axis is not available.")
-
-    layout.prop(self, "myfloatvector")
-    layout.prop(self, "starting_from_an_active_object" )
-    layout.prop(self, "to_origin" )
-    ybox = layout.box()
-    ybox.prop(self, "yaxisgroupret" )
-    ybox.prop(self, "y_axis_direction_to_reverse" )
-    ybox.prop(self, "x_axis_direction_to_reverse" )
-
-    layout.prop(self, "Z_axis_for_line_breaks" )
-
-    layout.prop(self, "mybool2" )
-    layout.prop(self, "mybool3" )
-    layout.prop(self, "myint2" )
-
-    movebox =layout.box()
-    movebox.label(text="Whole Movement") 
-    movebox.prop(self, "myfloatvector2")
-
-    transrotatebox =layout.box()
-    transrotatebox.prop(self, "tranmormbool" )
-    transrotatebox.prop(self, "minustranmormbool" )
-    grid = layout.grid_flow(row_major=True, columns=3, even_columns=True, even_rows=True, align=True)
-    grid.prop(self, "my_enum",  expand=True )
-
     
 def main(self, context):
     if self.starting_from_an_active_object == True:
@@ -262,13 +184,8 @@ def main(self, context):
     if self.tranmormbool == True:
         transform(taransaxis=self.my_enum,minustranmormbool=self.minustranmormbool)
 
+class AH_OP_Aligning_Horizontally_propaty:
 
-class AH_OP_Aligning_Horizontally(Operator):
-    bl_idname = 'object.aligning_horizontally'
-    bl_label = 'Aligning Horizontally'
-    bl_description = f' CLASS_NAME_IS={sys._getframe().f_code.co_name}/n ID_NAME_IS={bl_idname}\n FILENAME_IS={__file__}\n ' 
-    bl_options = {'REGISTER', 'UNDO','PRESET'}
-    
    
     myfloatvector:bpy.props.FloatVectorProperty(
         name='Constant Offset', 
@@ -356,6 +273,13 @@ class AH_OP_Aligning_Horizontally(Operator):
                            name="Axis",
                            default='X',
                            )
+    
+class AH_OP_Aligning_Horizontally(Operator,AH_OP_Aligning_Horizontally_propaty):
+    bl_idname = 'object.aligning_horizontally'
+    bl_label = 'Aligning Horizontally'
+    bl_description = f' CLASS_NAME_IS={sys._getframe().f_code.co_name}/n ID_NAME_IS={bl_idname}\n FILENAME_IS={__file__}\n ' 
+    bl_options = {'REGISTER', 'UNDO','PRESET'}
+    
 
 
                 
@@ -376,8 +300,7 @@ class AH_OP_Aligning_Horizontally(Operator):
 
 
     def draw(self,context):
-        main_draw(self)
-
+        main_draw(self,context)
 
 class AH_PT_Aligning_HorizontallyPanel(Panel):
     bl_label = "AH PANEL"
@@ -391,7 +314,6 @@ class AH_PT_Aligning_HorizontallyPanel(Panel):
 
         layout = self.layout
         layout.operator("object.aligning_horizontally")
-
 
 # 辞書登録関数　開始
 import os,codecs,csv
@@ -407,7 +329,6 @@ def GetTranslationDict():
                 dict['ja_JP'][(context, row[1].replace('\\n', '\n'))] = row[0].replace('\\n', '\n')
     return dict
 # 辞書登録関数　終わり
-
 
 def register():
     bpy.utils.register_class(AH_OP_Aligning_Horizontally)

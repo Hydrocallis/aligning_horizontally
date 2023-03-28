@@ -1,0 +1,54 @@
+from .dimension import dimensionlist
+from .gropuping import gropuping
+
+
+def main_draw(self,context):
+    layout = self.layout
+    seleobj = context.selected_objects
+    xlist,ylist,zlist = dimensionlist(self,seleobj)
+
+    #　グループ数の合計を計算　開始
+    objlist =[]
+    a=0
+    for i in seleobj:
+        objlist.append({"object":i,"spltname":i.name.split('.', 1)[0]})
+
+    for object, spltname in gropuping(objlist):
+          a+=1
+    #　グループ数の合計を計算　終了
+
+    layout.prop(self, "look_obname" )
+    layout.label(text="Dimensition") 
+    if  xlist != []:
+        layout.label(text="x="+str(max(xlist)))
+    if  ylist != []:
+        layout.label(text="y="+str(max(ylist)))
+    layout.label(text="Total number of groups")
+    layout.label(text=str(a) )
+
+    layout.prop(self, "myint" )
+    # layout.label(text="Note: z-axis is not available.")
+
+    layout.prop(self, "myfloatvector")
+    layout.prop(self, "starting_from_an_active_object" )
+    layout.prop(self, "to_origin" )
+    ybox = layout.box()
+    ybox.prop(self, "yaxisgroupret" )
+    ybox.prop(self, "y_axis_direction_to_reverse" )
+    ybox.prop(self, "x_axis_direction_to_reverse" )
+
+    layout.prop(self, "Z_axis_for_line_breaks" )
+
+    layout.prop(self, "mybool2" )
+    layout.prop(self, "mybool3" )
+    layout.prop(self, "myint2" )
+
+    movebox =layout.box()
+    movebox.label(text="Whole Movement") 
+    movebox.prop(self, "myfloatvector2")
+
+    transrotatebox =layout.box()
+    transrotatebox.prop(self, "tranmormbool" )
+    transrotatebox.prop(self, "minustranmormbool" )
+    grid = layout.grid_flow(row_major=True, columns=3, even_columns=True, even_rows=True, align=True)
+    grid.prop(self, "my_enum",  expand=True )

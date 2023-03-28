@@ -1,14 +1,21 @@
 from mathutils import Vector
 
+# 導入したい機能：　指定の数に達したらｙreturnのYのロケーションをリセットし、
+# 代わりにｚ軸を一段上げる　立体積み重ね機能
+
 def setting(self, seleobj, xlist=[], ylist=[], zlist=[], aligining=2, numreturntotal=0, ynumreturntotal=0):
 
     # ※numretuntotalの値はグループの改行ごとに加算されていく
     yaxis=1
+
     self.subreturn=yaxis
     self.subreturnmax=max(ylist)
     self.depth = 2
     depthmax=max(zlist)
+    # グループ内の改行が終わったら次のグループへ改行を促すためのカウント
+    self.ynumreturn = 0 
 
+    # ここでZ軸かY軸が縦軸か判定して入れ替える
     if self.Z_axis_for_line_breaks== True:
         self.subreturn=self.depth
         self.subreturnmax=depthmax
@@ -22,28 +29,31 @@ def setting(self, seleobj, xlist=[], ylist=[], zlist=[], aligining=2, numreturnt
     self.returnlocdeme =ynumreturntotal+self.myfloatvector2[self.subreturn]
     self.xlocdeme =self.myfloatvector2[0]
 
-def move_y_or_z_return(self, count, aligining, i ,ynumreturn):
+
+def move_y_or_z_return_counted_return(self,count,aligining,kirisute_count_y_or_z,obj):
+    #ｊ毎に改行するスクリプト　このスクリプトの後にJかIの条件を合わせてYの軸位置をリセットしてやれば改行がリセットされる。
+    if count >= aligining * kirisute_count_y_or_z:
+        if self.y_axis_direction_to_reverse == False:
+            obj.location[self.subreturn] = (self.subreturnmax) * kirisute_count_y_or_z + self.returnlocdeme
+        else:
+            obj.location[self.subreturn] = -(self.subreturnmax) * kirisute_count_y_or_z - self.returnlocdeme
+        self.ynumreturn += 1
+
+
+def move_y_or_z_return(self, count, aligining, obj ):
     # グループ内での改行(Y軸OR Z軸)の条件式
-    for j in range(self.kirisute):
+    for kirisute_count_y_or_z in range(self.kirisute):
         #指定した並び以上になったらY軸へ改行する分岐
-        if count >=aligining*j:
-            if self.y_axis_direction_to_reverse == False:
-                i.location[self.subreturn] = (self.subreturnmax)*j + self.returnlocdeme
-            else:
-                i.location[self.subreturn] = -(self.subreturnmax)*j - self.returnlocdeme
+        move_y_or_z_return_counted_return(self,count,aligining,kirisute_count_y_or_z,obj)
 
-            ynumreturn += 1
 
-    return ynumreturn
-
-def move_x_move(self,count,i,numreturntotal,xlist):
+def move_x_move(self,count,obj,numreturntotal,xlist):
     # グループの初回のXの位置　以降は位置がプラスされていく
     if count == 0:
         if self.x_axis_direction_to_reverse == False:
-            i.location[0] = numreturntotal + self.myfloatvector2[0]
+            obj.location[0] = numreturntotal + self.myfloatvector2[0]
         else:
-            i.location[0] = -numreturntotal - self.myfloatvector2[0]
-
+            obj.location[0] = -numreturntotal - self.myfloatvector2[0]
         pass
     
     else:
@@ -51,52 +61,49 @@ def move_x_move(self,count,i,numreturntotal,xlist):
         self.xlocdeme = self.xlocdeme+max(xlist)
         if count !=0:
             if self.x_axis_direction_to_reverse == False:
-                i.location[0] = self.xlocdeme + numreturntotal
+                obj.location[0] = self.xlocdeme + numreturntotal
             else:
-                i.location[0] = -self.xlocdeme - numreturntotal
+                obj.location[0] = -self.xlocdeme - numreturntotal
 
         elif count+1 == self.selelen:
             pass
 
-def move(self,i,count,numreturntotal,xlist,aligining,seleobj,ynumreturn):
+def move(self,obj,count,numreturntotal,xlist,aligining,seleobj):
 
     
-    # 奥行きの位置
+    # 奥行きの位置 Y軸モードだとZ軸の位置
     if self.to_origin == True:
-        i.location[self.depth] =self.myfloatvector[self.depth]+ self.filerst_obj_loc[self.depth]
+        obj.location[self.depth] =self.myfloatvector[self.depth]+ self.filerst_obj_loc[self.depth]
     else:
-        i.location[self.depth] =i.location[self.depth]+self.myfloatvector[self.depth]
+        obj.location[self.depth] =obj.location[self.depth]+self.myfloatvector[self.depth]
 
 
-    move_x_move(self,count,i,numreturntotal,xlist)
+    move_x_move(self,count,obj,numreturntotal,xlist)
 
-    ynumreturn = move_y_or_z_return(self, count, aligining, i ,ynumreturn)
+    move_y_or_z_return(self, count, aligining, obj )
                     
 
     # 改行後のXの位置の演算
     if len(seleobj) != 1:
-        for j in range(self.kirisute): 
-            if count+1 == aligining*j:
+        for kirisute_count in range(self.kirisute): 
+            if count + 1 == aligining * kirisute_count:
                 self.xlocdeme = self.myfloatvector2[0]-max(xlist)
 
-    return ynumreturn
 
 def loc(self, seleobj, xlist=[], ylist=[], zlist=[], aligining=2, numreturntotal=0, ynumreturntotal=0): 
     
     setting(self, seleobj, xlist ,ylist, zlist, aligining, numreturntotal, ynumreturntotal)
 
     #　Y軸のカウント変数
-    ynumreturn = 0
-    # filerst_obj_loc =seleobj[0].location 
-    for count,i in enumerate(seleobj):
-        ynumreturn = move(self,i,count,numreturntotal,xlist,aligining,seleobj,ynumreturn)
-        # if count ==0:
+
+    for count,obj in enumerate(seleobj):
+        move(self,obj,count,numreturntotal,xlist,aligining,seleobj)
         # print('###self.filerst_obj_loc',self.filerst_obj_loc)
         # print('###depth',self.depth)
         if self.depth ==2:
-            i.location= i.location+Vector((self.filerst_obj_loc[0],self.filerst_obj_loc[1],0))
+            obj.location= obj.location+Vector((self.filerst_obj_loc[0],self.filerst_obj_loc[1],0))
         elif self.depth ==1:
-            i.location= i.location+Vector((self.filerst_obj_loc[0],0,self.filerst_obj_loc[2]))
+            obj.location= obj.location+Vector((self.filerst_obj_loc[0],0,self.filerst_obj_loc[2]))
         
-    return ynumreturn
+    return self.ynumreturn
               
