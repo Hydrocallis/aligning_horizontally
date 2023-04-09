@@ -17,7 +17,10 @@ def main_draw(self,context):
           a+=1
     #　グループ数の合計を計算　終了
 
+    layout.prop(self, "only_parent_ojbect_select" )
     layout.prop(self, "look_obname" )
+    layout.prop(self, "Determine_the_width_for_each_group" )
+    layout.prop(self, "Stacked_on_a_cube" )
     layout.label(text="Dimensition") 
     if  xlist != []:
         layout.label(text="x="+str(max(xlist)))
@@ -27,8 +30,11 @@ def main_draw(self,context):
     layout.label(text=str(a) )
 
     layout.prop(self, "myint" )
+    if self.Stacked_on_a_cube == True:
+        layout.prop(self, "z_axis_return_number" )
     # layout.label(text="Note: z-axis is not available.")
 
+    layout.prop(self, "Adjustment_of_width_between_groups")
     layout.prop(self, "myfloatvector")
     layout.prop(self, "starting_from_an_active_object" )
     layout.prop(self, "to_origin" )
@@ -37,7 +43,10 @@ def main_draw(self,context):
     ybox.prop(self, "y_axis_direction_to_reverse" )
     ybox.prop(self, "x_axis_direction_to_reverse" )
 
-    layout.prop(self, "Z_axis_for_line_breaks" )
+    if self.Stacked_on_a_cube == False:
+        layout.prop(self, "Z_axis_for_line_breaks" )
+    elif self.Stacked_on_a_cube == True:
+        self.Z_axis_for_line_breaks == False
 
     layout.prop(self, "mybool2" )
     layout.prop(self, "mybool3" )
