@@ -33,6 +33,7 @@ from .utils.get_translang import get_translang
 from .utils.propaty import AH_OP_Aligning_Horizontally_propaty
 from .utils.gropu_align import GropuAlign
 from .utils.only_parent_object import only_selct_parent_object
+from .utils.randam_valuses import generate_values
 
 
 
@@ -76,10 +77,80 @@ from bpy.props import PointerProperty
 from bpy.types import Panel, Operator
 
 
+class AH_OP_RandomMaterialOperator(bpy.types.Operator):
+    bl_idname = "ksyn.random_material"
+    bl_label = "Random Material"
+    bl_options = {'REGISTER', 'UNDO',}
+    
+
+    
+    index_number: IntProperty(name="Index Number", default=1,soft_min =1,)
+    random_seed: IntProperty(name="Random Seed", default=0)
+    same_material: BoolProperty(name="Same Material", default=False)
+    randma_valse: bpy.props.FloatProperty(name="", default=0.2,soft_min=0,soft_max=1)
+    
+    def get_randam_valuse_choice(self,selected_value,matlist):
+        # selected_value = random.choice(matlist)
+        # print('###selected_value',matlist)
+        
+        choice_matlist = generate_values(selected_value, matlist, len(matlist), self.randma_valse)
+        randam_valuse_choice_material = random.choice(choice_matlist)
+        # print('###choice_matlist',choice_matlist)
+
+        return bpy.data.materials[randam_valuse_choice_material]
+
+
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None and context.object.type == 'MESH'
+    
+    def execute(self, context):
+        # active_object = bpy.context.object
+        selected_objects = bpy.context.selected_objects
+        # objects_to_change = [obj for obj in selected_objects if obj != active_object]
+        
+        random.seed(self.random_seed)
+
+        selected_value_mat = random.choice(context.scene.aling_material_object.data.materials)
+        selected_value =selected_value_mat.name
+        
+        if self.same_material:
+            random_material = random.choice(context.scene.aling_material_object.data.materials)
+        
+        for obj in selected_objects:
+            if not self.same_material:
+                matlist= [mat.name for mat in context.scene.aling_material_object.data.materials]
+                random_material = self.get_randam_valuse_choice(selected_value,matlist)
+                # random_material = random.choice(context.scene.aling_material_object.data.materials)
+            
+
+            try:
+                obj.data.materials[self.index_number-1] = random_material
+            except IndexError:
+                self.report({'WARNING'}, f"Materials Out Of Range.MAX{len(obj.data.materials)}")
+
+        return {'FINISHED'}
+
 class AH_PT_RandomMaterialOperator(Operator):
     bl_idname = "object.random_material"
     bl_label = "Random Face Material"
+    bl_options = {'REGISTER', 'UNDO',}
+
     
+    randma_valse: bpy.props.FloatProperty(name="", default=0.2,soft_min=0,soft_max=1)
+
+    def get_randam_valuse_choice(self,selected_value,matlist):
+        # selected_value = random.choice(matlist)
+        # print('###selected_value',matlist)
+        
+        choice_matlist = generate_values(selected_value, matlist, len(matlist), self.randma_valse)
+        randam_valuse_choice_material = random.choice(choice_matlist)
+        # print('###choice_matlist',choice_matlist)
+
+        return bpy.data.materials[randam_valuse_choice_material]
+
+
+
     def execute(self, context):
         # メッシュオブジェクトを取得
         obj = context.object
@@ -88,8 +159,11 @@ class AH_PT_RandomMaterialOperator(Operator):
         material_slots = obj.material_slots
         
         # MaterialObjectというオブジェクトのマテリアルスロットを取得
-        matlist = [slot.material for slot in context.scene.aling_material_object.material_slots]
-        
+        materials = context.scene.aling_material_object.data.materials
+        # matlist = [slot.material for slot in context.scene.aling_material_object.material_slots]
+        selected_value = random.choice(materials)
+        matlist = generate_values(selected_value, materials, len(materials), self.randma_valse)
+     
         # メッシュの各フェイスに対してランダムなマテリアルを割り当てる
         for face in obj.data.polygons:
             # ランダムなマテリアルスロットを選択
@@ -197,6 +271,12 @@ class AH_OP_ObjectAlignOperator(Operator):
         description="Reverse the direction of alignment",
         default=False
     )
+
+    randam_shuffle: BoolProperty(
+        name="Randam Shuffle",
+        description="Randam Shuffle",
+        default=False
+    )
     
     #SCALE
 
@@ -258,10 +338,21 @@ class AH_OP_ObjectAlignOperator(Operator):
         default=0.0,
     )
 
- 
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None
+
     def execute(self, context):
         seleobj = bpy.context.selected_objects
-        sorted_obj = sorted(seleobj, key=lambda obj: obj.name)
+        print('###1',seleobj)
+        if self.randam_shuffle:
+            random.shuffle(seleobj)
+            print('###2',seleobj)
+            sorted_obj = seleobj
+        else:
+            sorted_obj = sorted(seleobj, key=lambda obj: obj.name)
+
+
 
         if self.scale_randam:
             random.seed(self.scale_random_seed)
@@ -272,7 +363,7 @@ class AH_OP_ObjectAlignOperator(Operator):
                 obj_scale_x = random.uniform(self.scale_min_scale[0], self.scale_max_scale[0])
                 obj_scale_y = random.uniform(self.scale_min_scale[1], self.scale_max_scale[1])
                 obj_scale_z = random.uniform(self.scale_min_scale[2], self.scale_max_scale[2])
-                obj_scale = Euler((obj_scale_x, obj_scale_y, obj_scale_z), 'XYZ')
+                obj_scale = (obj_scale_x, obj_scale_y, obj_scale_z)
                 obj.scale = obj_scale
 
 
@@ -291,24 +382,15 @@ class AH_OP_ObjectAlignOperator(Operator):
                 rotation = Euler((rotation_x, rotation_y, rotation_z), 'XYZ')
                 obj.rotation_euler = rotation
 
-                # if self.direction == "X":
-                #     obj.scale.x = random.uniform(self.rotation_min, self.rotation_max)
-                # elif self.direction == "Y":
-                #     obj.scale.y = random.uniform(self.rotation_min, self.rotation_max)
-                # elif self.direction == "Z":
-                #     obj.scale.z = random.uniform(self.rotation_min, self.rotation_max)
-
-            # bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
-            # bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME', center='MEDIAN')
-
-
-
         seleobj = bpy.context.selected_objects
         sorted_obj = sorted(seleobj, key=lambda obj: obj.name)
         default_obj = bpy.context.object
-        x_position = default_obj.location.x
-
-    
+        if self.direction == "X":
+            x_position = default_obj.location.x
+        elif self.direction == "Y":
+            x_position = default_obj.location.y
+        elif self.direction == "Z":
+            x_position = default_obj.location.z
 
 
         for index, obj in enumerate(sorted_obj):
@@ -424,6 +506,8 @@ class AH_OP_Aligning_Horizontally(Operator,AH_OP_Aligning_Horizontally_propaty):
     def draw(self,context):
         main_draw(self,context)
 
+
+
 class AH_PT_RandomMaterialPanel(Panel):
     bl_idname = "VIEW3D_PT_random_material"
     bl_label = "Random Material"
@@ -438,8 +522,6 @@ class AH_PT_RandomMaterialPanel(Panel):
         layout.prop(scene, "aling_material_object", text="Material Object")
         layout.operator(AH_PT_RandomMaterialOperator.bl_idname)
         layout.operator("ksyn.random_material")
-
-
 
 class AH_PT_Aligning_HorizontallyPanel(Panel):
     bl_label = get_translang("AH PANEL",'簡単整列')
@@ -456,40 +538,59 @@ class AH_PT_Aligning_HorizontallyPanel(Panel):
         layout.operator("align.next_width")
         layout.operator("object.alin_easy_array")
 
-class AH_OP_RandomMaterialOperator(bpy.types.Operator):
-    bl_idname = "ksyn.random_material"
-    bl_label = "Random Material"
-    bl_options = {'REGISTER', 'UNDO',}
-    
+class AH_PT_Aligning_Horizontally_Help(Panel):
+    bl_label = get_translang("AH Help",'助けて')
+    bl_idname = "AH_PT_PANEL_help"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "KSYN"
 
-    
-    index_number: IntProperty(name="Index Number", default=1,soft_min =1,)
-    random_seed: IntProperty(name="Random Seed", default=0)
-    same_material: BoolProperty(name="Same Material", default=False)
-    
-    @classmethod
-    def poll(cls, context):
-        return context.object is not None and context.object.type == 'MESH'
-    
-    def execute(self, context):
-        # active_object = bpy.context.object
-        selected_objects = bpy.context.selected_objects
-        # objects_to_change = [obj for obj in selected_objects if obj != active_object]
-        
-        random.seed(self.random_seed)
-        
-        if self.same_material:
-            random_material = random.choice(context.scene.aling_material_object.data.materials)
-        
-        for obj in selected_objects:
-            if not self.same_material:
-                random_material = random.choice(context.scene.aling_material_object.data.materials)
-            try:
-                obj.data.materials[self.index_number-1] = random_material
-            except IndexError:
-                self.report({'WARNING'}, f"Materials Out Of Range.MAX{len(obj.data.materials)}")
+    def split_by_n(self, string, n):
+        result = [string[i:i+n] for i in range(0, len(string), n)]
+        return result
 
-        return {'FINISHED'}
+    def longtext_set(self, context,layout,long_text):
+            # Get 3D viewport area
+            for area in bpy.context.screen.areas:
+                if area.type == 'VIEW_3D':
+                    break
+
+            # Automatically set the width of the UI region to the width of the panel
+            for region in area.regions:
+                if region.type == 'UI':
+                    panel_width = region.width
+                    break
+
+            # Calculate the maximum width of the label
+            font_scale= 15
+            uifontscale = font_scale * context.preferences.view.ui_scale
+            max_label_width = int(panel_width // uifontscale)
+
+            save_alignment=layout.alignment
+
+            layout.alignment = 'RIGHT'
+            box = layout.box()
+            # Split the text into lines and format each line
+            for line in long_text.splitlines():
+                # Remove leading and trailing whitespace
+                line = line.strip()
+
+                # Split the line into chunks that fit within the maximum label width
+                
+                for chunk in self.split_by_n(line, max_label_width):
+
+                # for chunk in textwrap.wrap(line, width=max_label_width, break_long_words=False, break_on_hyphens=False):
+                    box.label(text=chunk)
+            layout.alignment = save_alignment
+    
+    def draw(self, context):
+
+        layout = self.layout
+
+        layout.label(text= get_translang("1",'1'))
+        long_text = get_translang("If the objects are to be aligned horizontally, rotate the objects in advance.",'横向きにに並べる場合はオブジェクトの回転を事前に適応しておく。')
+        self.longtext_set(context,layout,long_text)
+        
 
 # 辞書登録関数　開始
 import os,codecs,csv
@@ -514,6 +615,7 @@ def register():
     bpy.utils.register_class(AH_PT_Aligning_HorizontallyPanel)
     bpy.utils.register_class(AH_PT_RandomMaterialOperator)
     bpy.utils.register_class(AH_PT_RandomMaterialPanel)
+    bpy.utils.register_class(AH_PT_Aligning_Horizontally_Help)
     bpy.types.Scene.aling_material_object = PointerProperty(type=bpy.types.Object, name="Material Object", description="Select the Material Object")
 
 
@@ -531,6 +633,7 @@ def unregister():
     bpy.utils.unregister_class(AH_PT_Aligning_HorizontallyPanel)
     bpy.utils.unregister_class(AH_PT_RandomMaterialOperator)
     bpy.utils.unregister_class(AH_PT_RandomMaterialPanel)
+    bpy.utils.unregister_class(AH_PT_Aligning_Horizontally_Help)
     del bpy.types.Scene.aling_material_object
 	# 翻訳辞書の登録解除
     try:
