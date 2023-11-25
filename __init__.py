@@ -3,7 +3,7 @@ bl_info = {
     "name": "Aligning Horizontally",
     "description": " ",
     "author": "Hydrocallis",
-    "version": (1, 0, 5),
+    "version": (1, 0, 6),
     "blender": (3, 2, 0),
     "location": "View3D > Sidebar > KSYN Tab",
     "warning": "",
@@ -34,6 +34,7 @@ from .utils.propaty import AH_OP_Aligning_Horizontally_propaty
 from .utils.gropu_align import GropuAlign
 from .utils.only_parent_object import only_selct_parent_object
 from .utils.randam_valuses import generate_values
+from .utils.solid_color_material import scm_register,scm_unregister
 
 
 
@@ -79,10 +80,9 @@ from bpy.types import Panel, Operator
 
 class AH_OP_RandomMaterialOperator(bpy.types.Operator):
     bl_idname = "ksyn.random_material"
-    bl_label = "Random Material"
+    bl_label = get_translang('Random Select Material Index"','選択したマテリアルインデックスをランダムに')
     bl_options = {'REGISTER', 'UNDO',}
     
-
     
     index_number: IntProperty(name="Index Number", default=1,soft_min =1,)
     random_seed: IntProperty(name="Random Seed", default=0)
@@ -95,14 +95,16 @@ class AH_OP_RandomMaterialOperator(bpy.types.Operator):
         
         choice_matlist = generate_values(selected_value, matlist, len(matlist), self.randma_valse)
         randam_valuse_choice_material = random.choice(choice_matlist)
-        # print('###choice_matlist',choice_matlist)
+        # print('###choice_matlist',choice_matlist) bpy.context.scene.aling_material_object = bpy.data.objects["Cube.004"]
+
 
         return bpy.data.materials[randam_valuse_choice_material]
 
 
     @classmethod
     def poll(cls, context):
-        return context.object is not None and context.object.type == 'MESH'
+
+        return context.object is not None and context.object.type == 'MESH' and bpy.context.scene.aling_material_object is not None
     
     def execute(self, context):
         # active_object = bpy.context.object
@@ -131,13 +133,35 @@ class AH_OP_RandomMaterialOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class AH_PT_RandomMaterialOperator(Operator):
+class AH_OP_RandomFaceMaterialOperator(Operator):
     bl_idname = "object.random_material"
-    bl_label = "Random Face Material"
+    
+    bl_label = get_translang('Random Face Material"','メッシュのフェイスのマテリアルをランダム')
     bl_options = {'REGISTER', 'UNDO',}
+    use_choice_seed : bpy.props.BoolProperty(name="Use Choice Seed")
 
+
+    choice_random_seed: IntProperty(name="Choice Random Seed", default=0)
+    # random_seed: IntProperty(name="Random Seed", default=0)
     
     randma_valse: bpy.props.FloatProperty(name="", default=0.2,soft_min=0,soft_max=1)
+    selec_face : bpy.props.BoolProperty(name="Select Face")
+    choice_mat : bpy.props.StringProperty(name="Choice Mterial")
+
+
+
+    @classmethod
+    def poll(cls, context):
+
+        return context.object is not None and context.object.type == 'MESH' and bpy.context.scene.aling_material_object is not None
+    
+    def draw(self,context):
+        self.layout.label(text=f"Choice material : {self.choice_mat}")
+        self.layout.prop(self,"use_choice_seed")
+        if self.use_choice_seed:
+            self.layout.prop(self,"choice_random_seed")
+        self.layout.prop(self,"randma_valse")
+        self.layout.prop(self,"selec_face")
 
     def get_randam_valuse_choice(self,selected_value,matlist):
         # selected_value = random.choice(matlist)
@@ -149,35 +173,59 @@ class AH_PT_RandomMaterialOperator(Operator):
 
         return bpy.data.materials[randam_valuse_choice_material]
 
-
-
-    def execute(self, context):
-        # メッシュオブジェクトを取得
-        obj = context.object
+    def add_face_material(self,random_material,atc_matlist,obj,material_slots, face):
+        # フェイスにマテリアルを割り当て
+        if random_material not in atc_matlist:
+            obj.data.materials.append(random_material)
+            appendmat_index = material_slots[random_material.name].slot_index
+        else:
+            appendmat_index = material_slots[random_material.name].slot_index
         
-        # マテリアルスロットのリストを取得
+        face.material_index = appendmat_index
+
+    def make_randam_set_material(self,context,obj):
+         # マテリアルスロットのリストを取得
         material_slots = obj.material_slots
         
         # MaterialObjectというオブジェクトのマテリアルスロットを取得
         materials = context.scene.aling_material_object.data.materials
         # matlist = [slot.material for slot in context.scene.aling_material_object.material_slots]
+        if self.use_choice_seed:
+            random.seed(self.choice_random_seed)
+
         selected_value = random.choice(materials)
+        self.choice_mat = selected_value.name
+
         matlist = generate_values(selected_value, materials, len(materials), self.randma_valse)
-     
+ 
+       
         # メッシュの各フェイスに対してランダムなマテリアルを割り当てる
         for face in obj.data.polygons:
             # ランダムなマテリアルスロットを選択
+            # random.seed(self.random_seed)
+
             random_material = random.choice(matlist)
             atc_matlist = [slot.material for slot in material_slots]
-            
-            # フェイスにマテリアルを割り当て
-            if random_material not in atc_matlist:
-                obj.data.materials.append(random_material)
-                appendmat_index = material_slots[random_material.name].slot_index
+            # print('###face sele',face.select)
+            if self.selec_face:
+                if face.select ==True:
+                    self.add_face_material(random_material,atc_matlist,obj,material_slots, face)
             else:
-                appendmat_index = material_slots[random_material.name].slot_index
-            
-            face.material_index = appendmat_index
+                self.add_face_material(random_material,atc_matlist,obj,material_slots, face)
+
+    def execute(self, context):
+        mode=None
+
+        if bpy.context.mode =="EDIT_MESH":
+            bpy.ops.object.mode_set(mode='OBJECT')
+            mode="EDIT_MESH"
+
+        # メッシュオブジェクトを取得
+        for obj in bpy.context.selected_objects:
+            self.make_randam_set_material(context,obj)
+       
+        if mode =="EDIT_MESH":
+            bpy.ops.object.mode_set(mode='EDIT') 
         
         return {'FINISHED'}
 
@@ -506,8 +554,6 @@ class AH_OP_Aligning_Horizontally(Operator,AH_OP_Aligning_Horizontally_propaty):
     def draw(self,context):
         main_draw(self,context)
 
-
-
 class AH_PT_RandomMaterialPanel(Panel):
     bl_idname = "VIEW3D_PT_random_material"
     bl_label = "Random Material"
@@ -519,8 +565,8 @@ class AH_PT_RandomMaterialPanel(Panel):
         layout = self.layout
         scene = context.scene
         
-        layout.prop(scene, "aling_material_object", text="Material Object")
-        layout.operator(AH_PT_RandomMaterialOperator.bl_idname)
+        layout.prop(scene, "aling_material_object")
+        layout.operator(AH_OP_RandomFaceMaterialOperator.bl_idname)
         layout.operator("ksyn.random_material")
 
 class AH_PT_Aligning_HorizontallyPanel(Panel):
@@ -613,10 +659,10 @@ def register():
     bpy.utils.register_class(AH_OP_RandomMaterialOperator)
     bpy.utils.register_class(AH_OT_objarray)
     bpy.utils.register_class(AH_PT_Aligning_HorizontallyPanel)
-    bpy.utils.register_class(AH_PT_RandomMaterialOperator)
+    bpy.utils.register_class(AH_OP_RandomFaceMaterialOperator)
     bpy.utils.register_class(AH_PT_RandomMaterialPanel)
     bpy.utils.register_class(AH_PT_Aligning_Horizontally_Help)
-    bpy.types.Scene.aling_material_object = PointerProperty(type=bpy.types.Object, name="Material Object", description="Select the Material Object")
+    bpy.types.Scene.aling_material_object = PointerProperty(type=bpy.types.Object, name=get_translang('Material Object','対象のオブジェクト'), description="Select the Material Object")
 
 
  	# 翻訳辞書の登録
@@ -625,13 +671,15 @@ def register():
         bpy.app.translations.register(__name__, translation_dict)
     except: pass
 
+    scm_register()
+
 def unregister():
     bpy.utils.unregister_class(AH_OP_Aligning_Horizontally)
     bpy.utils.unregister_class(AH_OP_ObjectAlignOperator)
     bpy.utils.unregister_class(AH_OP_RandomMaterialOperator)
     bpy.utils.unregister_class(AH_OT_objarray)
     bpy.utils.unregister_class(AH_PT_Aligning_HorizontallyPanel)
-    bpy.utils.unregister_class(AH_PT_RandomMaterialOperator)
+    bpy.utils.unregister_class(AH_OP_RandomFaceMaterialOperator)
     bpy.utils.unregister_class(AH_PT_RandomMaterialPanel)
     bpy.utils.unregister_class(AH_PT_Aligning_Horizontally_Help)
     del bpy.types.Scene.aling_material_object
@@ -639,6 +687,8 @@ def unregister():
     try:
         bpy.app.translations.unregister(__name__)
     except: pass
+
+    scm_unregister
 
 if __name__ == "__main__":
     register()
