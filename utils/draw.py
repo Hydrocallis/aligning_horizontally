@@ -48,8 +48,11 @@ def main_draw(self,context):
     elif self.Stacked_on_a_cube == True:
         self.Z_axis_for_line_breaks == False
 
-    layout.prop(self, "mybool2" )
-    layout.prop(self, "mybool3" )
+    layout.prop(self, "gropu_toge" )
+    if self.gropu_toge and self.randam_all_gropu==False:
+        layout.prop(self, "pass_act_obj" )
+
+    layout.prop(self, "randam_all_gropu" )
     layout.prop(self, "myint2" )
 
     movebox =layout.box()

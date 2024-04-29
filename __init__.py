@@ -3,13 +3,14 @@ bl_info = {
     "name": "Aligning Horizontally",
     "description": " ",
     "author": "Hydrocallis",
-    "version": (1, 0, 6),
+    "version": (1, 1, 2),
     "blender": (3, 2, 0),
     "location": "View3D > Sidebar > KSYN Tab",
     "warning": "",
     # "doc_url": "",
     "category": "Object"
     }
+
 
 import bpy,sys, bmesh
 from mathutils import Vector
@@ -24,18 +25,6 @@ from bpy.types import (
 import random
 from bpy.props import IntProperty,BoolProperty,FloatVectorProperty
 
-# 他のモジュールを読み込み
-from .utils.transformrotation import transform
-from .utils.location import loc
-from .utils.dimension import dimensionlist
-from .utils.draw import main_draw
-from .utils.get_translang import get_translang
-from .utils.propaty import AH_OP_Aligning_Horizontally_propaty
-from .utils.gropu_align import GropuAlign
-from .utils.only_parent_object import only_selct_parent_object
-from .utils.randam_valuses import generate_values
-from .utils.solid_color_material import scm_register,scm_unregister
-
 
 
 # リロードモジュール　開始
@@ -48,7 +37,6 @@ def reload_unity_modules(name):
     for module in utils_modules:
         impline = "from . utils import %s" % (module)
 
-        # print("###hydoro unity reloading one %s" % (".".join([name] + ['utils'] + [module])))
 
         exec(impline)
         importlib.reload(eval(module))
@@ -68,276 +56,96 @@ def reload_unity_modules(name):
 
 if 'bpy' in locals():
     reload_unity_modules(bl_info['name'])
+
+# 他のモジュールを読み込み
+from .utils.transformrotation import transform
+from .utils.location import loc
+from .utils.dimension import dimensionlist
+from .utils.draw import main_draw
+from .utils.get_translang import get_translang
+from .utils.propaty import AH_OP_Aligning_Horizontally_propaty
+from .utils.gropu_align import GropuAlign
+from .utils.only_parent_object import only_selct_parent_object
+
+
 # リロードモジュール　終了
+
+
 import bpy
 
 from bpy.props import EnumProperty, BoolProperty, FloatProperty
 from bpy.types import Operator
 from mathutils import Euler
-from bpy.props import PointerProperty
-from bpy.types import Panel, Operator
+from bpy.props import PointerProperty,StringProperty
+from bpy.types import Panel, Operator,AddonPreferences
 
 
-class AH_OP_RandomMaterialOperator(bpy.types.Operator):
-    bl_idname = "ksyn.random_material"
-    bl_label = get_translang('Random Select Material Index"','選択したマテリアルインデックスをランダムに')
-    bl_options = {'REGISTER', 'UNDO',}
+
+
+class KSYNAlingnHorizonaddonPreferences(AddonPreferences):
+
+    bl_idname = __package__
+
+    split_string: StringProperty(
+        name=get_translang("String of criteria to be arrayed","配列する基準の文字列"),
+        default=".",
+
+        )# type: ignore
     
-    
-    index_number: IntProperty(name="Index Number", default=1,soft_min =1,)
-    random_seed: IntProperty(name="Random Seed", default=0)
-    same_material: BoolProperty(name="Same Material", default=False)
-    randma_valse: bpy.props.FloatProperty(name="", default=0.2,soft_min=0,soft_max=1)
-    
-    def get_randam_valuse_choice(self,selected_value,matlist):
-        # selected_value = random.choice(matlist)
-        # print('###selected_value',matlist)
-        
-        choice_matlist = generate_values(selected_value, matlist, len(matlist), self.randma_valse)
-        randam_valuse_choice_material = random.choice(choice_matlist)
-        # print('###choice_matlist',choice_matlist) bpy.context.scene.aling_material_object = bpy.data.objects["Cube.004"]
-
-
-        return bpy.data.materials[randam_valuse_choice_material]
-
-
-    @classmethod
-    def poll(cls, context):
-
-        return context.object is not None and context.object.type == 'MESH' and bpy.context.scene.aling_material_object is not None
-    
-    def execute(self, context):
-        # active_object = bpy.context.object
-        selected_objects = bpy.context.selected_objects
-        # objects_to_change = [obj for obj in selected_objects if obj != active_object]
-        
-        random.seed(self.random_seed)
-
-        selected_value_mat = random.choice(context.scene.aling_material_object.data.materials)
-        selected_value =selected_value_mat.name
-        
-        if self.same_material:
-            random_material = random.choice(context.scene.aling_material_object.data.materials)
-        
-        for obj in selected_objects:
-            if not self.same_material:
-                matlist= [mat.name for mat in context.scene.aling_material_object.data.materials]
-                random_material = self.get_randam_valuse_choice(selected_value,matlist)
-                # random_material = random.choice(context.scene.aling_material_object.data.materials)
-            
-
-            try:
-                obj.data.materials[self.index_number-1] = random_material
-            except IndexError:
-                self.report({'WARNING'}, f"Materials Out Of Range.MAX{len(obj.data.materials)}")
-
-        return {'FINISHED'}
-
-class AH_OP_RandomFaceMaterialOperator(Operator):
-    bl_idname = "object.random_material"
-    
-    bl_label = get_translang('Random Face Material"','メッシュのフェイスのマテリアルをランダム')
-    bl_options = {'REGISTER', 'UNDO',}
-    use_choice_seed : bpy.props.BoolProperty(name="Use Choice Seed")
-
-
-    choice_random_seed: IntProperty(name="Choice Random Seed", default=0)
-    # random_seed: IntProperty(name="Random Seed", default=0)
-    
-    randma_valse: bpy.props.FloatProperty(name="", default=0.2,soft_min=0,soft_max=1)
-    selec_face : bpy.props.BoolProperty(name="Select Face")
-    choice_mat : bpy.props.StringProperty(name="Choice Mterial")
 
 
 
-    @classmethod
-    def poll(cls, context):
+    def draw(self, context):
+        layout = self.layout
+        addon_prefs = context.preferences.addons["aligning_horizontally"].preferences
+        layout.prop(addon_prefs, "split_string")
 
-        return context.object is not None and context.object.type == 'MESH' and bpy.context.scene.aling_material_object is not None
-    
-    def draw(self,context):
-        self.layout.label(text=f"Choice material : {self.choice_mat}")
-        self.layout.prop(self,"use_choice_seed")
-        if self.use_choice_seed:
-            self.layout.prop(self,"choice_random_seed")
-        self.layout.prop(self,"randma_valse")
-        self.layout.prop(self,"selec_face")
-
-    def get_randam_valuse_choice(self,selected_value,matlist):
-        # selected_value = random.choice(matlist)
-        # print('###selected_value',matlist)
-        
-        choice_matlist = generate_values(selected_value, matlist, len(matlist), self.randma_valse)
-        randam_valuse_choice_material = random.choice(choice_matlist)
-        # print('###choice_matlist',choice_matlist)
-
-        return bpy.data.materials[randam_valuse_choice_material]
-
-    def add_face_material(self,random_material,atc_matlist,obj,material_slots, face):
-        # フェイスにマテリアルを割り当て
-        if random_material not in atc_matlist:
-            obj.data.materials.append(random_material)
-            appendmat_index = material_slots[random_material.name].slot_index
-        else:
-            appendmat_index = material_slots[random_material.name].slot_index
-        
-        face.material_index = appendmat_index
-
-    def make_randam_set_material(self,context,obj):
-         # マテリアルスロットのリストを取得
-        material_slots = obj.material_slots
-        
-        # MaterialObjectというオブジェクトのマテリアルスロットを取得
-        materials = context.scene.aling_material_object.data.materials
-        # matlist = [slot.material for slot in context.scene.aling_material_object.material_slots]
-        if self.use_choice_seed:
-            random.seed(self.choice_random_seed)
-
-        selected_value = random.choice(materials)
-        self.choice_mat = selected_value.name
-
-        matlist = generate_values(selected_value, materials, len(materials), self.randma_valse)
- 
-       
-        # メッシュの各フェイスに対してランダムなマテリアルを割り当てる
-        for face in obj.data.polygons:
-            # ランダムなマテリアルスロットを選択
-            # random.seed(self.random_seed)
-
-            random_material = random.choice(matlist)
-            atc_matlist = [slot.material for slot in material_slots]
-            # print('###face sele',face.select)
-            if self.selec_face:
-                if face.select ==True:
-                    self.add_face_material(random_material,atc_matlist,obj,material_slots, face)
-            else:
-                self.add_face_material(random_material,atc_matlist,obj,material_slots, face)
-
-    def execute(self, context):
-        mode=None
-
-        if bpy.context.mode =="EDIT_MESH":
-            bpy.ops.object.mode_set(mode='OBJECT')
-            mode="EDIT_MESH"
-
-        # メッシュオブジェクトを取得
-        for obj in bpy.context.selected_objects:
-            self.make_randam_set_material(context,obj)
-       
-        if mode =="EDIT_MESH":
-            bpy.ops.object.mode_set(mode='EDIT') 
-        
-        return {'FINISHED'}
-
-class AH_OT_objarray(bpy.types.Operator):
-    bl_idname = 'object.alin_easy_array'
-    bl_label = 'ALing Array'
-    bl_description = f' CLASS_NAME_IS={sys._getframe().f_code.co_name}/n ID_NAME_IS={bl_idname}\n FILENAME_IS={__file__}\n '
-    # 3Dで用のプロパティ
-    bl_options = {'REGISTER', 'UNDO','PRESET'}
-    
-    count : bpy.props.IntProperty(
-    name= "count",
-    default=1
-        )
-
-    ro:bpy.props.FloatVectorProperty(
-        name='Relative Offset', 
-        description='', 
-        default=(1.0, 0.0, 0),
-        subtype="XYZ"
-        )
-        
-    co:bpy.props.FloatVectorProperty(
-        name='Constant Offset', 
-        description='', 
-        default=(0.0, 0.0, 0),
-        subtype="XYZ_LENGTH"
-        )    
-            
-    link_bool : bpy.props.BoolProperty(
-        name="link"
-        )
-
-    @classmethod
-    def poll(self, context):
-        
-        return  bpy.context.object
-        
-        
-
-    def object_duplicate_array(self,):
-        cobj = bpy.context.object
-        selectedobjenamelist =  [i.name for i  in bpy.context.selected_objects]
-        
-        # if range ==0:
-        x_dimension,y_dimension,z_dimension=cobj.dimensions
-        # else:
-        #     x_dimension,y_dimension,z_dimension=dimensionss
-        value =  (x_dimension*self.ro[0]+self.co[0], 
-                  y_dimension*self.ro[1]+self.co[1], 
-                  z_dimension*self.ro[2]+self.co[2], 
-                  )
-        bpy.ops.object.duplicate_move(
-            OBJECT_OT_duplicate={
-                "linked":self.link_bool,
-                "mode":'TRANSLATION'},
-                TRANSFORM_OT_translate={
-                                    "value":value, 
-                                        }
-                                    )
-
-
- 
-        return selectedobjenamelist
-
-    def execute(self, context):
-        for i in range(self.count):
-            selectedobjenamelist = self.object_duplicate_array()
-   
-
-
-        return {'FINISHED'}
+# オペレーター
 
 class AH_OP_ObjectAlignOperator(Operator):
     bl_idname = "align.next_width"
-    bl_label = "Align Next Width Objects"
+    bl_label = get_translang("Align Next Width Objects",'直列配列機能')
     bl_options = {'REGISTER', 'UNDO','PRESET'}
 
     direction: EnumProperty(
-        name="Direction",
+        name=get_translang("Direction",'方向'),
         items=[
             ("X", "X", "Move objects along the X-axis"),
             ("Y", "Y", "Move objects along the Y-axis"),
             ("Z", "Z", "Move objects along the Z-axis")
         ],
         default="X"
-    )
+    ) # type: ignore
     
     reverse_direction: BoolProperty(
-        name="Reverse Direction",
+        name=get_translang("Reverse Direction",'逆方向'),
         description="Reverse the direction of alignment",
         default=False
-    )
+    ) # type: ignore
 
     randam_shuffle: BoolProperty(
-        name="Randam Shuffle",
+        name=get_translang("Randam Shuffle",'順序の入れ替え'),
         description="Randam Shuffle",
         default=False
-    )
+    ) # type: ignore
+
+    shuffle_random_seed: bpy.props.IntProperty(
+        name=get_translang("shuffle Random Seed",'シード'),
+        default=0
+    ) # type: ignore
     
     #SCALE
 
     scale_randam: BoolProperty(
-        name="scale_randam",
+        name=get_translang("scale_randam",'スケールをランダム化'),
         description="",
         default=False
-    )
+    ) # type: ignore
 
     scale_random_seed: bpy.props.IntProperty(
-        name="Scale Random Seed",
+        name=get_translang("Scale Random Seed",'シード'),
         default=0
-    )
+    ) # type: ignore
 
     scale_min_scale: FloatVectorProperty(
         name="min_scale",
@@ -345,46 +153,46 @@ class AH_OP_ObjectAlignOperator(Operator):
         default=(1.0, 1.0, 1.0),
 
    
-    )
+    ) # type: ignore
 
     scale_max_scale: FloatVectorProperty(
         name="max_scale",
         description="max_scale",
         default=(1.0, 1.0, 1.0),
-    )
+    ) # type: ignore
     
     #ROTATION
     rotation_randam: BoolProperty(
-        name="rotation_randam",
+        name=get_translang("rotation_randam",'回転のランダム化'),
         description="",
         default=False
-    )
+    ) # type: ignore
 
     rotation_random_seed: bpy.props.IntProperty(
-        name="Rotation Random Seed",
+        name=get_translang("Rotation Random Seed",'シード'),
         default=0
-    )
+    ) # type: ignore
 
     min_rotation: bpy.props.FloatVectorProperty(
         name="Min Rotation",
         default=(0.0, 0.0, 0.0),
         subtype='EULER',
         size=3
-    )
+    ) # type: ignore
     max_rotation: bpy.props.FloatVectorProperty(
         name="Max Rotation",
         default=(0, 0, 0),
         subtype='EULER',
         size=3
-    )
+    ) # type: ignore
     
     
     # CAP
     gap: FloatProperty(
-        name="Gap",
+        name=get_translang("Gap",'オブジェトの距離'),
         description="Gap between objects",
         default=0.0,
-    )
+    ) # type: ignore
 
     @classmethod
     def poll(cls, context):
@@ -392,10 +200,11 @@ class AH_OP_ObjectAlignOperator(Operator):
 
     def execute(self, context):
         seleobj = bpy.context.selected_objects
-        print('###1',seleobj)
+        # print('###1',seleobj)
         if self.randam_shuffle:
+            random.seed(self.shuffle_random_seed)
             random.shuffle(seleobj)
-            print('###2',seleobj)
+            # print('###2',seleobj)
             sorted_obj = seleobj
         else:
             sorted_obj = sorted(seleobj, key=lambda obj: obj.name)
@@ -431,7 +240,7 @@ class AH_OP_ObjectAlignOperator(Operator):
                 obj.rotation_euler = rotation
 
         seleobj = bpy.context.selected_objects
-        sorted_obj = sorted(seleobj, key=lambda obj: obj.name)
+        # sorted_obj = sorted(seleobj, key=lambda obj: obj.name)
         default_obj = bpy.context.object
         if self.direction == "X":
             x_position = default_obj.location.x
@@ -473,70 +282,83 @@ class AH_OP_ObjectAlignOperator(Operator):
             
         return {'FINISHED'}
 
-# グルーピングしないで整列
-def Align_sigle_gropu(self):
-    numreturntotal=0
-    seleobj=bpy.context.selected_objects
-    
-    seleobj.sort(key = lambda o: o.name)
-
-    # ランダムに配置する
-    if self.mybool3 == True:
-        random.seed(self.myint2)
-        random.shuffle(seleobj)
-
-    xlist,ylist,zlist = dimensionlist(self,seleobj)
-
-
-    loc(self,
-        seleobj=seleobj, 
-        xlist=xlist,
-        ylist=ylist,
-        zlist=zlist,
-        aligining=self.myint,
-        numreturntotal=numreturntotal,
-        
-            )   
-
-def look_obname(self):
-    if self.look_obname==True:
-        for ob in bpy.context.selectable_objects:
-            ob.show_name = True
-
-    else:
-        for ob in bpy.context.selectable_objects:
-            ob.show_name = False
-    
-def main(self, context):
-    if self.only_parent_ojbect_select == True:
-        only_selct_parent_object()
-        
-    if self.starting_from_an_active_object == True:
-        self.filerst_obj_loc = bpy.context.object.location.xyz
-    else:
-        self.filerst_obj_loc = (0,0,0)
-
-    look_obname(self)
-
-    if self.mybool2 != True:
-        gropu_align=GropuAlign()
-        gropu_align.gropu_align(self)
-    else:
-        Align_sigle_gropu(self)
-
-    if self.tranmormbool == True:
-        transform(taransaxis=self.my_enum,minustranmormbool=self.minustranmormbool)
-
 class AH_OP_Aligning_Horizontally(Operator,AH_OP_Aligning_Horizontally_propaty):
     bl_idname = 'object.aligning_horizontally'
     bl_label = get_translang('Aligning Horizontally','整列')
     bl_description = f' CLASS_NAME_IS={sys._getframe().f_code.co_name}/n ID_NAME_IS={bl_idname}\n FILENAME_IS={__file__}\n ' 
     bl_options = {'REGISTER', 'UNDO','PRESET'}
-    
+        
+    # グルーピングしないで整列
+    def Align_sigle_gropu(self):
+        numreturntotal=0
+        seleobj = bpy.context.selected_objects
+        act_obj = bpy.context.active_object
+
+        # act_obj.name を先頭に持ってくるためのソート関数
+        def custom_sort(obj):
+            if obj == act_obj:
+                return -1  # act_obj を最初に持ってくる
+            else:
+                return 0
+
+        # ソートする
+        seleobj.sort(key=lambda o: o.name)
+        if self.pass_act_obj:  # pass_act_obj が True の場合
+            seleobj.sort(key=custom_sort)
+        
+
+        # ランダムに配置する
+        if self.randam_all_gropu == True:
+            random.seed(self.myint2)
+            random.shuffle(seleobj)
+
+        xlist,ylist,zlist = dimensionlist(self,seleobj)
+
+
+        loc(self,
+            seleobj=seleobj, 
+            xlist=xlist,
+            ylist=ylist,
+            zlist=zlist,
+            aligining=self.myint,
+            numreturntotal=numreturntotal,
+            
+                )   
+
+    # 名前の表示
+    def lookobname(self):
+        if self.look_obname==True:
+            for ob in bpy.context.selectable_objects:
+                ob.show_name = True
+
+        else:
+            for ob in bpy.context.selectable_objects:
+                ob.show_name = False
+        
+
+    def main(self, context):
+        if self.only_parent_ojbect_select == True:
+            only_selct_parent_object()
+            
+        if self.starting_from_an_active_object == True:
+            self.filerst_obj_loc = bpy.context.object.location.xyz
+        else:
+            self.filerst_obj_loc = (0,0,0)
+
+        self.lookobname()
+
+        if self.gropu_toge != True:
+            gropu_align=GropuAlign()
+            gropu_align.gropu_align(self)
+        else:
+            self.Align_sigle_gropu()
+
+        if self.tranmormbool == True:
+            transform(taransaxis=self.my_enum,minustranmormbool=self.minustranmormbool)
 
                 
     def execute(self, context):
-        main(self, context)
+        self.main(context)
 
 
         return {'FINISHED'}
@@ -546,28 +368,31 @@ class AH_OP_Aligning_Horizontally(Operator,AH_OP_Aligning_Horizontally_propaty):
         return context.active_object is not None
 
 
-    # def invoke(self, context, event):
-    #     wm = context.window_manager
-    #     return wm.invoke_props_dialog(self)
-
-
     def draw(self,context):
         main_draw(self,context)
 
-class AH_PT_RandomMaterialPanel(Panel):
-    bl_idname = "VIEW3D_PT_random_material"
-    bl_label = "Random Material"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = "KSYN"
-    
-    def draw(self, context):
-        layout = self.layout
-        scene = context.scene
-        
-        layout.prop(scene, "aling_material_object")
-        layout.operator(AH_OP_RandomFaceMaterialOperator.bl_idname)
-        layout.operator("ksyn.random_material")
+class KSYNAH_OPAddonPreferences(bpy.types.Operator):
+    bl_idname = "ksynah.open_addonpreferences"
+    bl_label = "Open Addon Preferences"
+
+    cmd: bpy.props.StringProperty(default="", options={'HIDDEN'}) # type: ignore
+
+
+    def execute(self, context):
+
+
+        preferences = bpy.context.preferences
+        addon_prefs = preferences.addons["aligning_horizontally"].preferences
+
+        bpy.ops.screen.userpref_show("INVOKE_DEFAULT")
+        preferences.active_section = 'ADDONS'
+        bpy.ops.preferences.addon_expand(module = "aligning_horizontally")
+        bpy.ops.preferences.addon_show(module = "aligning_horizontally")
+
+        return {'FINISHED'}
+
+
+# パネル
 
 class AH_PT_Aligning_HorizontallyPanel(Panel):
     bl_label = get_translang("AH PANEL",'簡単整列')
@@ -580,12 +405,14 @@ class AH_PT_Aligning_HorizontallyPanel(Panel):
     def draw(self, context):
 
         layout = self.layout
+
+        layout.operator("ksynah.open_addonpreferences",text="Setting",  icon="TOOL_SETTINGS")
         layout.operator("object.aligning_horizontally")
         layout.operator("align.next_width")
-        layout.operator("object.alin_easy_array")
 
-class AH_PT_Aligning_Horizontally_Help(Panel):
-    bl_label = get_translang("AH Help",'助けて')
+
+class AH_PT_Aligning_Horizontallyhelppanel(Panel):
+    bl_label = get_translang("AH Help",'簡単整列 助けて')
     bl_idname = "AH_PT_PANEL_help"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -633,10 +460,20 @@ class AH_PT_Aligning_Horizontally_Help(Panel):
 
         layout = self.layout
 
-        layout.label(text= get_translang("1",'1'))
-        long_text = get_translang("If the objects are to be aligned horizontally, rotate the objects in advance.",'横向きにに並べる場合はオブジェクトの回転を事前に適応しておく。')
+        layout.label(text= get_translang("1 alignment",'1 整列'))
+        long_text = get_translang("If the objects are to be aligned horizontally, rotate the objects in advance.",
+                                  '横向きにに並べる場合はオブジェクトの回転を事前に適応しておくこと。')
         self.longtext_set(context,layout,long_text)
-        
+        self.longtext_set(context,layout,long_text)
+
+register_cls=[
+    KSYNAH_OPAddonPreferences,
+    AH_OP_Aligning_Horizontally,
+    AH_OP_ObjectAlignOperator,
+    AH_PT_Aligning_HorizontallyPanel,
+    KSYNAlingnHorizonaddonPreferences,
+    AH_PT_Aligning_Horizontallyhelppanel,
+    ]
 
 # 辞書登録関数　開始
 import os,codecs,csv
@@ -654,16 +491,9 @@ def GetTranslationDict():
 # 辞書登録関数　終わり
 
 def register():
-    bpy.utils.register_class(AH_OP_Aligning_Horizontally)
-    bpy.utils.register_class(AH_OP_ObjectAlignOperator)
-    bpy.utils.register_class(AH_OP_RandomMaterialOperator)
-    bpy.utils.register_class(AH_OT_objarray)
-    bpy.utils.register_class(AH_PT_Aligning_HorizontallyPanel)
-    bpy.utils.register_class(AH_OP_RandomFaceMaterialOperator)
-    bpy.utils.register_class(AH_PT_RandomMaterialPanel)
-    bpy.utils.register_class(AH_PT_Aligning_Horizontally_Help)
-    bpy.types.Scene.aling_material_object = PointerProperty(type=bpy.types.Object, name=get_translang('Material Object','対象のオブジェクト'), description="Select the Material Object")
-
+    for reg_cl in register_cls:
+        bpy.utils.register_class(reg_cl)
+ 
 
  	# 翻訳辞書の登録
     try:
@@ -671,24 +501,17 @@ def register():
         bpy.app.translations.register(__name__, translation_dict)
     except: pass
 
-    scm_register()
 
 def unregister():
-    bpy.utils.unregister_class(AH_OP_Aligning_Horizontally)
-    bpy.utils.unregister_class(AH_OP_ObjectAlignOperator)
-    bpy.utils.unregister_class(AH_OP_RandomMaterialOperator)
-    bpy.utils.unregister_class(AH_OT_objarray)
-    bpy.utils.unregister_class(AH_PT_Aligning_HorizontallyPanel)
-    bpy.utils.unregister_class(AH_OP_RandomFaceMaterialOperator)
-    bpy.utils.unregister_class(AH_PT_RandomMaterialPanel)
-    bpy.utils.unregister_class(AH_PT_Aligning_Horizontally_Help)
-    del bpy.types.Scene.aling_material_object
+    for reg_cl in register_cls:
+
+        bpy.utils.unregister_class(reg_cl)
+
 	# 翻訳辞書の登録解除
     try:
         bpy.app.translations.unregister(__name__)
     except: pass
 
-    scm_unregister
 
 if __name__ == "__main__":
     register()

@@ -59,7 +59,7 @@ def Numerous_processes_in_the_group(self,spltname,sortlist):
         sortlist.append(name['object'])
 
     # グループピングしたソートリストをグループ毎にランダムに配置する
-    if self.mybool3 == True:
+    if self.randam_all_gropu == True:
         random.seed(self.myint2)
         random.shuffle(sortlist)
 
@@ -81,12 +81,14 @@ def Numerous_processes_in_the_group(self,spltname,sortlist):
     sortlist.clear()
 
 def setting(self):
+    addon_prefs = bpy.context.preferences.addons["aligning_horizontally"].preferences
+
     self.objlist=[]
     self.seleobj = bpy.context.selected_objects
     # xlist,ylist,zlist = dimensionlist(self,seleobj)
 
     for i in self.seleobj:
-        self.objlist.append({"object":i,"spltname":i.name.split('.', 1)[0]})
+        self.objlist.append({"object":i,"spltname":i.name.split(addon_prefs.split_string, 1)[0]})
     self.sortlist =[]
 
     # 下記2つはグループの改行移動量
