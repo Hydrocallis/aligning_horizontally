@@ -66,7 +66,7 @@ from .utils.get_translang import get_translang
 from .utils.propaty import AH_OP_Aligning_Horizontally_propaty
 from .utils.gropu_align import GropuAlign
 from .utils.only_parent_object import only_selct_parent_object
-
+from . import addon_updater_ops
 
 # リロードモジュール　終了
 
@@ -81,8 +81,41 @@ from bpy.types import Panel, Operator,AddonPreferences
 
 
 
+class UpdaterProps:
+    
+    auto_check_update : bpy.props.BoolProperty(
+		name="Auto-check for Update",
+		description="If enabled, auto-check for updates using an interval",
+		default=False) # type: ignore
 
-class KSYNAlingnHorizonaddonPreferences(AddonPreferences):
+    updater_interval_months : bpy.props.IntProperty(
+		name='Months',
+		description="Number of months between checking for updates",
+		default=0,
+		min=0)# type: ignore
+
+    updater_interval_days : bpy.props.IntProperty(
+		name='Days',
+		description="Number of days between checking for updates",
+		default=7,
+		min=0,
+		max=31)# type: ignore
+
+    updater_interval_hours : bpy.props.IntProperty(
+		name='Hours',
+		description="Number of hours between checking for updates",
+		default=0,
+		min=0,
+		max=23)# type: ignore
+
+    updater_interval_minutes : bpy.props.IntProperty(
+		name='Minutes',
+		description="Number of minutes between checking for updates",
+		default=0,
+		min=0,
+		max=59)# type: ignore
+
+class KSYNAlingnHorizonaddonPreferences(AddonPreferences,UpdaterProps):
 
     bl_idname = __package__
 
@@ -99,6 +132,8 @@ class KSYNAlingnHorizonaddonPreferences(AddonPreferences):
         layout = self.layout
         addon_prefs = context.preferences.addons["aligning_horizontally"].preferences
         layout.prop(addon_prefs, "split_string")
+        addon_updater_ops.update_settings_ui(self, context)
+
 
 # オペレーター
 
@@ -459,6 +494,25 @@ class AH_PT_Aligning_Horizontallyhelppanel(Panel):
     def draw(self, context):
 
         layout = self.layout
+        
+        addon_updater_ops.check_for_update_background()
+
+        layout.label(text="Updater")
+        layout.label(text="")
+
+        # col = layout.column()
+        # col.scale_y = 0.7
+        # col.label(text="If an update is ready,")
+        # col.label(text="popup triggered by opening")
+        # col.label(text="this panel, plus a box ui")
+
+        # Could also use your own custom drawing based on shared variables.
+        if addon_updater_ops.updater.update_ready:
+            layout.label(text="Custom update message", icon="INFO")
+        layout.label(text="")
+
+        # Call built-in function with draw code/checks.
+        addon_updater_ops.update_notice_box_ui(self, context)
 
         layout.label(text= get_translang("1 alignment",'1 整列'))
         long_text = get_translang("If the objects are to be aligned horizontally, rotate the objects in advance.",
@@ -491,6 +545,8 @@ def GetTranslationDict():
 # 辞書登録関数　終わり
 
 def register():
+    addon_updater_ops.register(bl_info)
+
     for reg_cl in register_cls:
         bpy.utils.register_class(reg_cl)
  
@@ -503,6 +559,8 @@ def register():
 
 
 def unregister():
+    addon_updater_ops.unregister()
+
     for reg_cl in register_cls:
 
         bpy.utils.unregister_class(reg_cl)
