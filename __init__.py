@@ -495,25 +495,6 @@ class AH_PT_Aligning_Horizontallyhelppanel(Panel):
 
         layout = self.layout
         
-        addon_updater_ops.check_for_update_background()
-
-        layout.label(text="Updater")
-        layout.label(text="")
-
-        # col = layout.column()
-        # col.scale_y = 0.7
-        # col.label(text="If an update is ready,")
-        # col.label(text="popup triggered by opening")
-        # col.label(text="this panel, plus a box ui")
-
-        # Could also use your own custom drawing based on shared variables.
-        if addon_updater_ops.updater.update_ready:
-            layout.label(text="Custom update message", icon="INFO")
-        layout.label(text="")
-
-        # Call built-in function with draw code/checks.
-        addon_updater_ops.update_notice_box_ui(self, context)
-
         layout.label(text= get_translang("1 alignment",'1 整列'))
         long_text = get_translang("If the objects are to be aligned horizontally, rotate the objects in advance.",
                                   '横向きにに並べる場合はオブジェクトの回転を事前に適応しておくこと。')
