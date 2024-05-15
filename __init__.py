@@ -440,7 +440,6 @@ class AH_PT_Aligning_HorizontallyPanel(Panel):
     def draw(self, context):
 
         layout = self.layout
-
         layout.operator("ksynah.open_addonpreferences",text="Setting",  icon="TOOL_SETTINGS")
         layout.operator("object.aligning_horizontally")
         layout.operator("align.next_width")
